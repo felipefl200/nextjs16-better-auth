@@ -2,8 +2,8 @@
 
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { FetchAuthGateway } from "../../infrastructure/auth/FetchAuthGateway";
-import { LoginUseCase } from "../../application/use-cases/LoginUseCase";
+import { FetchAuthGateway } from "@/src/infrastructure/auth/FetchAuthGateway";
+import { LoginUseCase } from "@/src/application/use-cases/LoginUseCase";
 
 export default function LoginPage() {
   const router = useRouter();

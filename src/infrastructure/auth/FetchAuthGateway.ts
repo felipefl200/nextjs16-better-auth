@@ -1,26 +1,33 @@
-import { AuthGateway } from '../../application/ports/AuthGateway';
-import { Session } from '../../domain/entities/Session';
-import { User } from '../../domain/entities/User';
-import { InvalidCredentialsError, UserAlreadyExistsError, AuthError } from '../../domain/errors/AuthErrors';
+import { AuthGateway } from "@/src/application/ports/AuthGateway";
+import {
+  InvalidCredentialsError,
+  UserAlreadyExistsError,
+  AuthError,
+} from "../../domain/errors/AuthErrors";
+import { Session } from "@/src/domain/entities/Session";
+import { User } from "@/src/domain/entities/User";
 
 export class FetchAuthGateway implements AuthGateway {
   private baseUrl: string;
   private headers: Record<string, string>;
 
-  constructor(options?: { baseUrl?: string; headers?: Record<string, string> }) {
+  constructor(options?: {
+    baseUrl?: string;
+    headers?: Record<string, string>;
+  }) {
     // No cliente (browser) usamos o proxy relativo, no servidor (middleware) precisamos da URL absoluta da API
-    this.baseUrl = options?.baseUrl || '/api/auth';
+    this.baseUrl = options?.baseUrl || "/api/auth";
     this.headers = options?.headers || {};
   }
 
   async login(email: string, password: string): Promise<void> {
     const res = await fetch(`${this.baseUrl}/sign-in/email`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...this.headers,
       },
-      credentials: 'include',
+      credentials: "include",
       body: JSON.stringify({ email, password }),
     });
 
@@ -34,12 +41,12 @@ export class FetchAuthGateway implements AuthGateway {
 
   async register(email: string, password: string, name: string): Promise<void> {
     const res = await fetch(`${this.baseUrl}/sign-up/email`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...this.headers,
       },
-      credentials: 'include',
+      credentials: "include",
       body: JSON.stringify({ email, password, name }),
     });
 
@@ -52,15 +59,15 @@ export class FetchAuthGateway implements AuthGateway {
   }
 
   async getSession(): Promise<Session | null> {
-    const isServer = typeof window === 'undefined';
-    const queryParams = isServer ? '?disableRefresh=true' : '';
+    const isServer = typeof window === "undefined";
+    const queryParams = isServer ? "?disableRefresh=true" : "";
     const res = await fetch(`${this.baseUrl}/get-session${queryParams}`, {
-      method: 'GET',
+      method: "GET",
       headers: {
         ...this.headers,
       },
-      credentials: 'include',
-      cache: 'no-store', // Sempre validar com o servidor
+      credentials: "include",
+      cache: "no-store", // Sempre validar com o servidor
     });
 
     if (!res.ok) {
@@ -68,23 +75,27 @@ export class FetchAuthGateway implements AuthGateway {
     }
 
     const data = await res.json();
-    
+
     // O retorno do better-auth costuma ter data.session e data.user
     if (!data || !data.session || !data.user) {
       return null;
     }
 
     const user = new User(data.user.id, data.user.email, data.user.name);
-    return new Session(data.session.token, user, new Date(data.session.expiresAt));
+    return new Session(
+      data.session.token,
+      user,
+      new Date(data.session.expiresAt),
+    );
   }
 
   async logout(): Promise<void> {
     const res = await fetch(`${this.baseUrl}/sign-out`, {
-      method: 'POST',
+      method: "POST",
       headers: {
         ...this.headers,
       },
-      credentials: 'include',
+      credentials: "include",
     });
 
     if (!res.ok) {
