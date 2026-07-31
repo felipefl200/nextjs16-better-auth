@@ -2,8 +2,8 @@
 
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { FetchAuthGateway } from "../../infrastructure/auth/FetchAuthGateway";
-import { RegisterUseCase } from "../../application/use-cases/RegisterUseCase";
+import { FetchAuthGateway } from "@/src/infrastructure/auth/FetchAuthGateway";
+import { RegisterUseCase } from "@/src/application/use-cases/RegisterUseCase";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,7 +19,8 @@ export default function RegisterPage() {
         const registerUseCase = new RegisterUseCase(gateway);
         await registerUseCase.execute(email, password, name);
 
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
+        router.refresh();
         return { error: null };
       } catch (err: unknown) {
         if (err instanceof Error) {

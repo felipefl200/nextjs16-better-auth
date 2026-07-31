@@ -3,7 +3,7 @@ import {
   InvalidCredentialsError,
   UserAlreadyExistsError,
   AuthError,
-} from "../../domain/errors/AuthErrors";
+} from "@/src/domain/errors/AuthErrors";
 import { Session } from "@/src/domain/entities/Session";
 import { User } from "@/src/domain/entities/User";
 
@@ -20,7 +20,10 @@ export class FetchAuthGateway implements AuthGateway {
     this.headers = options?.headers || {};
   }
 
-  async login(email: string, password: string): Promise<void> {
+  async login(
+    email: string,
+    password: string,
+  ): Promise<{ twoFactorRedirect?: boolean }> {
     const res = await fetch(`${this.baseUrl}/sign-in/email`, {
       method: "POST",
       headers: {
@@ -37,6 +40,9 @@ export class FetchAuthGateway implements AuthGateway {
       }
       throw new AuthError(`Falha no login: ${res.statusText}`);
     }
+
+    const data = await res.json().catch(() => ({}));
+    return { twoFactorRedirect: Boolean(data?.twoFactorRedirect) };
   }
 
   async register(email: string, password: string, name: string): Promise<void> {
@@ -81,7 +87,12 @@ export class FetchAuthGateway implements AuthGateway {
       return null;
     }
 
-    const user = new User(data.user.id, data.user.email, data.user.name);
+    const user = new User(
+      data.user.id,
+      data.user.email,
+      data.user.name,
+      Boolean(data.user.twoFactorEnabled),
+    );
     return new Session(
       data.session.token,
       user,
@@ -100,6 +111,99 @@ export class FetchAuthGateway implements AuthGateway {
 
     if (!res.ok) {
       throw new AuthError(`Falha no logout: ${res.statusText}`);
+    }
+  }
+
+  async enableTwoFactor(
+    password: string,
+  ): Promise<{ totpURI: string; backupCodes: string[] }> {
+    const res = await fetch(`${this.baseUrl}/two-factor/enable`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...this.headers,
+      },
+      credentials: "include",
+      body: JSON.stringify({ password }),
+    });
+
+    if (!res.ok) {
+      throw new AuthError(`Falha ao habilitar 2FA: ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    return {
+      totpURI: data.totpURI || "",
+      backupCodes: data.backupCodes || [],
+    };
+  }
+
+  async verifyTotp(code: string): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/two-factor/verify-totp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...this.headers,
+      },
+      credentials: "include",
+      body: JSON.stringify({ code }),
+    });
+
+    if (!res.ok) {
+      throw new AuthError("Código de autenticação inválido ou expirado.");
+    }
+  }
+
+  async disableTwoFactor(password: string): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/two-factor/disable`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...this.headers,
+      },
+      credentials: "include",
+      body: JSON.stringify({ password }),
+    });
+
+    if (!res.ok) {
+      throw new AuthError(
+        "Senha incorreta. Não foi possível desabilitar o 2FA.",
+      );
+    }
+  }
+
+  async authenticateTotp(code: string, trustDevice?: boolean): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/two-factor/verify-totp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...this.headers,
+      },
+      credentials: "include",
+      body: JSON.stringify({ code, trustDevice }),
+    });
+
+    if (!res.ok) {
+      throw new AuthError("Código de 6 dígitos inválido.");
+    }
+  }
+
+  async authenticateBackupCode(
+    code: string,
+    trustDevice?: boolean,
+  ): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/two-factor/verify-backup-code`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...this.headers,
+      },
+      credentials: "include",
+      body: JSON.stringify({ code, trustDevice }),
+    });
+
+    if (!res.ok) {
+      throw new AuthError("Código de backup inválido.");
     }
   }
 }

@@ -1,4 +1,5 @@
 import { getRequiredSession } from "@/src/infrastructure/auth/getRequiredSession";
+import TwoFactorSettingsCard from "./TwoFactorSettingsCard";
 
 export default async function SettingsPage() {
   const session = await getRequiredSession();
@@ -18,15 +19,7 @@ export default async function SettingsPage() {
           </h3>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-950/50 rounded-xl border border-gray-800">
-              <div>
-                <h4 className="text-sm font-medium text-white">Autenticação em Duas Etapas (2FA)</h4>
-                <p className="text-xs text-gray-400">Adicione uma camada extra de segurança à sua conta.</p>
-              </div>
-              <button className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl text-xs font-semibold transition-all">
-                Configurar 2FA
-              </button>
-            </div>
+            <TwoFactorSettingsCard initialTwoFactorEnabled={Boolean(session.user.twoFactorEnabled)} />
 
             <div className="flex items-center justify-between p-4 bg-gray-950/50 rounded-xl border border-gray-800">
               <div>
