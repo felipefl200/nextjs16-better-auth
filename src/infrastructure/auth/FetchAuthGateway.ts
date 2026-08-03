@@ -92,11 +92,16 @@ export class FetchAuthGateway implements AuthGateway {
       data.user.email,
       data.user.name,
       Boolean(data.user.twoFactorEnabled),
+      data.user.role ?? undefined,
+      data.user.banned ?? undefined,
+      data.user.banReason ?? null,
+      data.user.banExpires ? new Date(data.user.banExpires) : null,
     );
     return new Session(
       data.session.token,
       user,
       new Date(data.session.expiresAt),
+      data.session.impersonatedBy ?? null,
     );
   }
 

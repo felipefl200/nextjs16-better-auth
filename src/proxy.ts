@@ -42,6 +42,7 @@ export const config = {
     "/dashboard/:path*",
     "/settings/:path*",
     "/profile/:path*",
+    "/admin/:path*",
     "/login",
     "/login/2fa",
   ],

@@ -4,7 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LogoutButton from "./dashboard/LogoutButton";
 
-export default function Navbar() {
+interface NavbarProps {
+  isAdmin?: boolean;
+}
+
+export default function Navbar({ isAdmin }: NavbarProps) {
   const pathname = usePathname();
 
   const navItems = [
@@ -12,6 +16,10 @@ export default function Navbar() {
     { label: "Perfil", href: "/profile" },
     { label: "Configurações", href: "/settings" },
   ];
+
+  if (isAdmin) {
+    navItems.push({ label: "Painel Admin", href: "/admin" });
+  }
 
   return (
     <nav className="bg-gray-900/60 border-b border-gray-800 backdrop-blur-md sticky top-0 z-50">
@@ -28,7 +36,10 @@ export default function Navbar() {
 
           <div className="flex items-center space-x-1">
             {navItems.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive =
+                item.href === "/admin"
+                  ? pathname.startsWith("/admin")
+                  : pathname === item.href;
               return (
                 <Link
                   key={item.href}
