@@ -1,22 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { FetchAdminGateway } from "@/src/infrastructure/admin/FetchAdminGateway";
-import { ListUserSessionsUseCase } from "@/src/application/use-cases/ListUserSessionsUseCase";
-import { RevokeUserSessionUseCase } from "@/src/application/use-cases/RevokeUserSessionUseCase";
-import { UserSession } from "@/src/application/ports/AdminGateway";
+import { FetchAuthGateway } from "@/src/infrastructure/auth/FetchAuthGateway";
+import { ListSessionsUseCase } from "@/src/application/use-cases/ListSessionsUseCase";
+import { RevokeSessionUseCase } from "@/src/application/use-cases/RevokeSessionUseCase";
+import { ActiveSession } from "@/src/application/ports/AuthGateway";
 import { Button, Alert } from "@/src/components/ui";
 
 interface ActiveSessionsCardProps {
-  userId: string;
+  userId?: string;
   currentSessionToken: string;
 }
 
 export default function ActiveSessionsCard({
-  userId,
   currentSessionToken,
 }: ActiveSessionsCardProps) {
-  const [sessions, setSessions] = useState<UserSession[]>([]);
+  const [sessions, setSessions] = useState<ActiveSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [revokingToken, setRevokingToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,9 +25,9 @@ export default function ActiveSessionsCard({
     setLoading(true);
     setError(null);
     try {
-      const gateway = new FetchAdminGateway();
-      const useCase = new ListUserSessionsUseCase(gateway);
-      const data = await useCase.execute(userId);
+      const gateway = new FetchAuthGateway();
+      const useCase = new ListSessionsUseCase(gateway);
+      const data = await useCase.execute();
       setSessions(data);
     } catch (err: unknown) {
       setError(
@@ -39,19 +38,41 @@ export default function ActiveSessionsCard({
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, []);
 
   useEffect(() => {
-    fetchSessions();
-  }, [fetchSessions]);
+    let isMounted = true;
+    const load = async () => {
+      const gateway = new FetchAuthGateway();
+      const useCase = new ListSessionsUseCase(gateway);
+      try {
+        const data = await useCase.execute();
+        if (isMounted) setSessions(data);
+      } catch (err: unknown) {
+        if (isMounted) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Falha ao carregar as sessões ativas.",
+          );
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleRevoke = async (token: string) => {
     setRevokingToken(token);
     setError(null);
     setSuccess(null);
     try {
-      const gateway = new FetchAdminGateway();
-      const useCase = new RevokeUserSessionUseCase(gateway);
+      const gateway = new FetchAuthGateway();
+      const useCase = new RevokeSessionUseCase(gateway);
       await useCase.execute(token);
       setSuccess("Sessão revogada com sucesso.");
       await fetchSessions();

@@ -1,4 +1,4 @@
-import { AuthGateway } from "@/src/application/ports/AuthGateway";
+import { AuthGateway, ActiveSession } from "@/src/application/ports/AuthGateway";
 import {
   InvalidCredentialsError,
   UserAlreadyExistsError,
@@ -379,4 +379,52 @@ export class FetchAuthGateway implements AuthGateway {
 
     return { filename: data.filename };
   }
+
+  async listSessions(): Promise<ActiveSession[]> {
+    const res = await fetch(`${this.baseUrl}/list-sessions`, {
+      method: "GET",
+      headers: {
+        ...this.headers,
+      },
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      throw new AuthError("Falha ao carregar as sessões ativas.");
+    }
+
+    const data = await res.json().catch(() => ([]));
+    const sessionsList = Array.isArray(data) ? data : Array.isArray(data?.sessions) ? data.sessions : [];
+
+    return sessionsList.map((s: Record<string, unknown>) => ({
+      id: s.id as string,
+      token: s.token as string,
+      userId: s.userId as string,
+      expiresAt: new Date(s.expiresAt as string),
+      createdAt: new Date(s.createdAt as string),
+      ipAddress: (s.ipAddress as string) ?? null,
+      userAgent: (s.userAgent as string) ?? null,
+    }));
+  }
+
+  async revokeSession(token: string): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/revoke-session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...this.headers,
+      },
+      credentials: "include",
+      body: JSON.stringify({ token }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new AuthError(
+        translateErrorMessage(data?.message, "Falha ao revogar a sessão."),
+      );
+    }
+  }
 }
+

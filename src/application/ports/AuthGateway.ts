@@ -5,6 +5,16 @@ export interface EnableTwoFactorResult {
   backupCodes: string[];
 }
 
+export interface ActiveSession {
+  id: string;
+  token: string;
+  userId: string;
+  expiresAt: Date;
+  createdAt: Date;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
+
 export interface AuthGateway {
   login(
     email: string,
@@ -20,4 +30,7 @@ export interface AuthGateway {
   authenticateBackupCode(code: string, trustDevice?: boolean): Promise<void>;
   updateProfile(data: { name?: string; email?: string; image?: string }): Promise<void>;
   uploadAvatar(file: File): Promise<{ filename: string }>;
+  listSessions(): Promise<ActiveSession[]>;
+  revokeSession(token: string): Promise<void>;
 }
+
