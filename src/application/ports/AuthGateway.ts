@@ -18,4 +18,5 @@ export interface AuthGateway {
   disableTwoFactor(password: string): Promise<void>;
   authenticateTotp(code: string, trustDevice?: boolean): Promise<void>;
   authenticateBackupCode(code: string, trustDevice?: boolean): Promise<void>;
+  updateProfile(data: { name?: string; email?: string }): Promise<void>;
 }

@@ -4,6 +4,8 @@ import { useActionState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FetchAuthGateway } from "@/src/infrastructure/auth/FetchAuthGateway";
 import { LoginUseCase } from "@/src/application/use-cases/LoginUseCase";
+import { UserBannedError } from "@/src/domain/errors/AuthErrors";
+import { Card, Input, Button, Alert } from "@/src/components/ui";
 
 function getSafeRedirectUrl(urlParam: string | null): string {
   if (!urlParam) return "/dashboard";
@@ -20,7 +22,10 @@ function LoginForm() {
   const targetUrl = getSafeRedirectUrl(rawRedirectTo);
 
   const [state, formAction, isPending] = useActionState(
-    async (prevState: { error: string | null }, formData: FormData) => {
+    async (
+      prevState: { error: string | null; isBanned?: boolean },
+      formData: FormData,
+    ) => {
       const email = formData.get("email") as string;
       const password = formData.get("password") as string;
 
@@ -32,26 +37,28 @@ function LoginForm() {
         if (result?.twoFactorRedirect) {
           router.push(`/login/2fa?redirectTo=${encodeURIComponent(targetUrl)}`);
           router.refresh();
-          return { error: null };
+          return { error: null, isBanned: false };
         }
 
         // Se sucesso sem 2FA, navega para a URL solicitada ou /dashboard
         router.push(targetUrl);
         router.refresh();
-        return { error: null };
+        return { error: null, isBanned: false };
       } catch (err: unknown) {
-        if (err instanceof Error) {
-          return { error: err.message };
+        if (err instanceof UserBannedError) {
+          return { error: err.message, isBanned: true };
+        } else if (err instanceof Error) {
+          return { error: err.message, isBanned: false };
         } else {
-          return { error: "Erro ao realizar login." };
+          return { error: "Erro ao realizar login.", isBanned: false };
         }
       }
     },
-    { error: null },
+    { error: null, isBanned: false },
   );
 
   return (
-    <div className="relative z-10 w-full max-w-md p-8 bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-3xl shadow-2xl">
+    <Card variant="glass" className="relative z-10 w-full max-w-md p-8">
       <h1 className="text-3xl font-bold text-white mb-2 text-center">
         Bem-vindo de volta
       </h1>
@@ -60,57 +67,52 @@ function LoginForm() {
       </p>
 
       {state.error && (
-        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 text-sm">
+        <Alert
+          variant={state.isBanned ? "warning" : "danger"}
+          title={state.isBanned ? "Conta Suspensa" : undefined}
+          className="mb-6"
+        >
           {state.error}
-        </div>
+        </Alert>
       )}
 
       <form action={formAction} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            E-mail
-          </label>
-          <input
-            name="email"
-            type="email"
-            className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none placeholder-gray-500"
-            placeholder="seu@email.com"
-            required
-          />
-        </div>
+        <Input
+          label="E-mail"
+          name="email"
+          type="email"
+          placeholder="seu@email.com"
+          required
+        />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Senha
-          </label>
-          <input
-            name="password"
-            type="password"
-            className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none placeholder-gray-500"
-            placeholder="••••••••"
-            required
-          />
-        </div>
+        <Input
+          label="Senha"
+          name="password"
+          type="password"
+          placeholder="••••••••"
+          required
+        />
 
-        <button
+        <Button
           type="submit"
-          disabled={isPending}
-          className="w-full py-3 px-4 bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-indigo-500/25 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+          isLoading={isPending}
+          fullWidth
+          size="lg"
         >
           {isPending ? "Entrando..." : "Entrar"}
-        </button>
+        </Button>
       </form>
 
       <p className="mt-6 text-center text-gray-400 text-sm">
         Ainda não tem uma conta?{" "}
         <button
           onClick={() => router.push("/register")}
-          className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+          className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors cursor-pointer"
         >
           Cadastre-se
         </button>
       </p>
-    </div>
+    </Card>
   );
 }
 

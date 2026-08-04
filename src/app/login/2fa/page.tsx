@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FetchAuthGateway } from "@/src/infrastructure/auth/FetchAuthGateway";
 import { AuthenticateTwoFactorUseCase } from "@/src/application/use-cases/AuthenticateTwoFactorUseCase";
+import { Card, Input, Button, Alert } from "@/src/components/ui";
 
 function getSafeRedirectUrl(urlParam: string | null): string {
   if (!urlParam) return "/dashboard";
@@ -54,7 +55,7 @@ function TwoFactorChallengeForm() {
   };
 
   return (
-    <div className="relative z-10 w-full max-w-md p-8 bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-3xl shadow-2xl">
+    <Card variant="glass" className="relative z-10 w-full max-w-md p-8">
       <div className="w-16 h-16 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
         <svg
           className="w-8 h-8 text-indigo-400"
@@ -81,29 +82,23 @@ function TwoFactorChallengeForm() {
       </p>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 text-sm text-center">
+        <Alert variant="danger" className="mb-6 text-center">
           {error}
-        </div>
+        </Alert>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            {useBackupCode
-              ? "Código de Backup"
-              : "Código de Autenticação (6 dígitos)"}
-          </label>
-          <input
-            type="text"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder={useBackupCode ? "ex: a1b2c3d4e5" : "000000"}
-            maxLength={useBackupCode ? 20 : 6}
-            className="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none placeholder-gray-600 text-center font-mono text-lg tracking-widest text-white"
-            required
-            autoFocus
-          />
-        </div>
+        <Input
+          label={useBackupCode ? "Código de Backup" : "Código de Autenticação (6 dígitos)"}
+          type="text"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder={useBackupCode ? "ex: a1b2c3d4e5" : "000000"}
+          maxLength={useBackupCode ? 20 : 6}
+          className="text-center font-mono text-lg tracking-widest"
+          required
+          autoFocus
+        />
 
         <div className="flex items-center space-x-3 bg-gray-950/50 p-3 rounded-xl border border-gray-800/80">
           <input
@@ -121,13 +116,15 @@ function TwoFactorChallengeForm() {
           </label>
         </div>
 
-        <button
+        <Button
           type="submit"
-          disabled={isPending || !code.trim()}
-          className="w-full py-3 px-4 bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-indigo-500/25 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+          isLoading={isPending}
+          disabled={!code.trim()}
+          fullWidth
+          size="lg"
         >
           {isPending ? "Verificando..." : "Confirmar e Entrar"}
-        </button>
+        </Button>
       </form>
 
       <div className="mt-6 pt-6 border-t border-gray-800/80 text-center">
@@ -138,14 +135,14 @@ function TwoFactorChallengeForm() {
             setCode("");
             setError(null);
           }}
-          className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+          className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors cursor-pointer"
         >
           {useBackupCode
             ? "← Usar aplicativo de autenticação (TOTP)"
             : "Não tem acesso ao celular? Usar código de backup"}
         </button>
       </div>
-    </div>
+    </Card>
   );
 }
 

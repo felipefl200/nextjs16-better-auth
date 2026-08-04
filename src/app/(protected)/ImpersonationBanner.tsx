@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Button } from '@/src/components/ui';
 
 interface ImpersonationBannerProps {
   impersonatedBy?: string | null;
@@ -39,7 +40,7 @@ export default function ImpersonationBanner({
   return (
     <div className="bg-amber-500 text-gray-950 font-medium text-xs px-6 py-2.5 flex justify-between items-center shadow-lg">
       <div className="flex items-center space-x-2">
-        <span className="font-bold uppercase tracking-wider bg-amber-950 text-amber-300 px-2 py-0.5 rounded">
+        <span className="font-bold uppercase tracking-wider bg-amber-950 text-amber-300 px-2 py-0.5 rounded-lg">
           Modo Impersonação Ativo
         </span>
         <span>
@@ -47,13 +48,14 @@ export default function ImpersonationBanner({
         </span>
       </div>
 
-      <button
+      <Button
         onClick={handleStopImpersonating}
-        disabled={loading}
-        className="px-3 py-1 bg-gray-950 hover:bg-gray-900 text-amber-300 rounded font-semibold text-xs transition-colors border border-amber-400/40"
+        isLoading={loading}
+        variant="secondary"
+        size="sm"
       >
         {loading ? 'Saindo...' : 'Encerrar Impersonação ✕'}
-      </button>
+      </Button>
     </div>
   );
 }

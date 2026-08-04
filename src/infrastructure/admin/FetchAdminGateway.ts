@@ -50,6 +50,9 @@ export class FetchAdminGateway implements AdminGateway {
   }
 
   private mapUser(data: Record<string, unknown>): User {
+    if (!data) {
+      throw new AdminError('Dados do usuário não foram retornados pela API');
+    }
     return new User(
       data.id as string,
       data.email as string,
@@ -103,11 +106,14 @@ export class FetchAdminGateway implements AdminGateway {
   }
 
   async getUser(userId: string): Promise<User> {
-    const data = await this.request<{ user: Record<string, unknown> }>(
-      `/admin/get-user?userId=${encodeURIComponent(userId)}`,
+    const data = await this.request<Record<string, unknown>>(
+      `/admin/get-user?id=${encodeURIComponent(userId)}`,
       { method: 'GET' },
     );
-    return this.mapUser(data.user);
+    const userObj = (data && typeof data === 'object' && 'user' in data && data.user)
+      ? (data.user as Record<string, unknown>)
+      : data;
+    return this.mapUser(userObj);
   }
 
   async createUser(input: {
@@ -116,14 +122,17 @@ export class FetchAdminGateway implements AdminGateway {
     name: string;
     role?: string;
   }): Promise<User> {
-    const data = await this.request<{ user: Record<string, unknown> }>(
+    const data = await this.request<Record<string, unknown>>(
       '/admin/create-user',
       {
         method: 'POST',
         body: JSON.stringify(input),
       },
     );
-    return this.mapUser(data.user);
+    const userObj = (data && typeof data === 'object' && 'user' in data && data.user)
+      ? (data.user as Record<string, unknown>)
+      : data;
+    return this.mapUser(userObj);
   }
 
   async setRole(userId: string, role: string): Promise<void> {
@@ -149,7 +158,7 @@ export class FetchAdminGateway implements AdminGateway {
   ): Promise<void> {
     await this.request('/admin/update-user', {
       method: 'POST',
-      body: JSON.stringify({ userId, ...data }),
+      body: JSON.stringify({ userId, data }),
     });
   }
 

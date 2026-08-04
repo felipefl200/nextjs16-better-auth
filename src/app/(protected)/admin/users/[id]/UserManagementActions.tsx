@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User } from '@/src/domain/entities/User';
+import { UserDTO } from '@/src/domain/entities/User';
+import { Card, Button, Input, Alert } from '@/src/components/ui';
 
 interface UserManagementActionsProps {
-  targetUser: User;
+  targetUser: UserDTO;
 }
 
 export default function UserManagementActions({ targetUser }: UserManagementActionsProps) {
@@ -92,21 +93,15 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
   };
 
   return (
-    <div className="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl space-y-6">
+    <Card className="space-y-6">
       <h3 className="text-lg font-semibold text-white border-b border-gray-800 pb-2">
         Ações Administrativas
       </h3>
 
       {message && (
-        <div
-          className={`p-3 rounded-xl text-sm ${
-            message.type === 'success'
-              ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
-              : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
-          }`}
-        >
+        <Alert variant={message.type === 'success' ? 'success' : 'danger'}>
           {message.text}
-        </div>
+        </Alert>
       )}
 
       {/* Alterar Role */}
@@ -115,20 +110,22 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
           Alterar Papel / Role
         </label>
         <div className="flex space-x-2">
-          <button
+          <Button
             onClick={() => handleRoleChange('user')}
             disabled={loading || targetUser.role === 'user'}
-            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-xs font-medium text-white rounded-lg border border-gray-700"
+            variant="secondary"
+            size="sm"
           >
             Tornar User
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleRoleChange('admin')}
             disabled={loading || targetUser.role === 'admin'}
-            className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-xs font-medium text-white rounded-lg border border-purple-500/30"
+            variant="primary"
+            size="sm"
           >
             Tornar Admin
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -138,29 +135,32 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
           Status de Acesso
         </label>
         {targetUser.banned ? (
-          <button
+          <Button
             onClick={handleUnban}
-            disabled={loading}
-            className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition-all"
+            isLoading={loading}
+            variant="success"
+            fullWidth
+            size="md"
           >
             Desbanir Usuário
-          </button>
+          </Button>
         ) : (
           <div className="space-y-2">
-            <input
+            <Input
               type="text"
               placeholder="Motivo do banimento (opcional)"
               value={banReason}
               onChange={(e) => setBanReason(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none"
             />
-            <button
+            <Button
               onClick={handleBan}
-              disabled={loading}
-              className="w-full py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-xl transition-all"
+              isLoading={loading}
+              variant="danger"
+              fullWidth
+              size="md"
             >
               Banir Usuário
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -170,48 +170,53 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
         <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">
           Redefinir Senha
         </label>
-        <div className="flex space-x-2">
-          <input
+        <div className="flex items-center space-x-2">
+          <Input
             type="password"
             placeholder="Nova senha (min 6)"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className="flex-1 px-3 py-2 bg-gray-950 border border-gray-800 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none"
           />
-          <button
+          <Button
             onClick={handleResetPassword}
-            disabled={loading}
-            className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition-all"
+            isLoading={loading}
+            variant="primary"
+            size="md"
+            className="shrink-0"
           >
             Alterar
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Impersonação */}
       <div className="space-y-2 border-t border-gray-800/80 pt-4">
-        <label className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 block mb-1">
           Suporte Operacional
         </label>
-        <button
+        <Button
           onClick={handleImpersonate}
-          disabled={loading}
-          className="w-full py-2 bg-amber-600/80 hover:bg-amber-500 text-white text-xs font-semibold rounded-xl transition-all"
+          isLoading={loading}
+          variant="warning"
+          fullWidth
+          size="md"
         >
           Impersonar Usuário (Acessar como ele)
-        </button>
+        </Button>
       </div>
 
       {/* Remover Usuário */}
       <div className="space-y-2 border-t border-gray-800/80 pt-4">
-        <button
+        <Button
           onClick={handleRemove}
-          disabled={loading}
-          className="w-full py-2 bg-gray-950 hover:bg-rose-950 text-rose-400 hover:text-rose-300 border border-rose-900/40 text-xs font-semibold rounded-xl transition-all"
+          isLoading={loading}
+          variant="danger-outline"
+          fullWidth
+          size="md"
         >
           Remover Usuário Permanentemente
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }

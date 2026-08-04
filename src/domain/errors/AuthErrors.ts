@@ -25,3 +25,11 @@ export class UnauthorizedError extends AuthError {
     this.name = 'UnauthorizedError';
   }
 }
+
+export class UserBannedError extends AuthError {
+  constructor(message?: string) {
+    super(message || 'Sua conta está suspensa. Entre em contato com o suporte.');
+    this.name = 'UserBannedError';
+  }
+}
+

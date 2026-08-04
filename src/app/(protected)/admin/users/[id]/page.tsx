@@ -83,7 +83,7 @@ export default async function UserDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        <UserManagementActions targetUser={targetUser} />
+        <UserManagementActions targetUser={targetUser.toDTO()} />
       </div>
     </div>
   );

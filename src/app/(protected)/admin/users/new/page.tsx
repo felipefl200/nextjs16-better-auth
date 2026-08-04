@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Card, Input, Button, Alert } from '@/src/components/ui';
 
 export default function NewUserPage() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function NewUserPage() {
   };
 
   return (
-    <div className="max-w-xl mx-auto bg-gray-900/60 border border-gray-800 p-8 rounded-2xl shadow-xl">
+    <Card className="max-w-xl mx-auto p-8 shadow-xl">
       <div className="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
         <h2 className="text-xl font-bold text-white">Cadastrar Novo Usuário</h2>
         <Link
@@ -52,55 +53,36 @@ export default function NewUserPage() {
         </Link>
       </div>
 
-      {error && (
-        <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm">
-          {error}
-        </div>
-      )}
+      {error && <Alert variant="danger" className="mb-6">{error}</Alert>}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1.5">
-            Nome Completo
-          </label>
-          <input
-            type="text"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Nome do usuário"
-            className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-          />
-        </div>
+        <Input
+          label="Nome Completo"
+          type="text"
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Nome do usuário"
+        />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1.5">
-            E-mail
-          </label>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="email@exemplo.com"
-            className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-          />
-        </div>
+        <Input
+          label="E-mail"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="email@exemplo.com"
+        />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1.5">
-            Senha Inicial
-          </label>
-          <input
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Mínimo 6 caracteres"
-            className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-          />
-        </div>
+        <Input
+          label="Senha Inicial"
+          type="password"
+          required
+          minLength={6}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Mínimo 6 caracteres"
+        />
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1.5">
@@ -109,21 +91,23 @@ export default function NewUserPage() {
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-sm input-field outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="user">User (Usuário Padrão)</option>
             <option value="admin">Admin (Administrador)</option>
           </select>
         </div>
 
-        <button
+        <Button
           type="submit"
-          disabled={loading}
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-600/20"
+          isLoading={loading}
+          variant="primary"
+          fullWidth
+          size="lg"
         >
           {loading ? 'Cadastrando...' : 'Criar Usuário'}
-        </button>
+        </Button>
       </form>
-    </div>
+    </Card>
   );
 }

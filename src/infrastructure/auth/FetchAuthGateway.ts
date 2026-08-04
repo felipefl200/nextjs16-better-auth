@@ -2,6 +2,7 @@ import { AuthGateway } from "@/src/application/ports/AuthGateway";
 import {
   InvalidCredentialsError,
   UserAlreadyExistsError,
+  UserBannedError,
   AuthError,
 } from "@/src/domain/errors/AuthErrors";
 import { Session } from "@/src/domain/entities/Session";
@@ -35,10 +36,22 @@ export class FetchAuthGateway implements AuthGateway {
     });
 
     if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (
+        res.status === 403 ||
+        data?.code === "BANNED_USER" ||
+        data?.code === "USER_BANNED" ||
+        (typeof data?.message === "string" &&
+          (data.message.toLowerCase().includes("banid") ||
+            data.message.toLowerCase().includes("suspens")))
+      ) {
+        throw new UserBannedError(data?.message);
+      }
+
       if (res.status === 401 || res.status === 400) {
         throw new InvalidCredentialsError();
       }
-      throw new AuthError(`Falha no login: ${res.statusText}`);
+      throw new AuthError(data?.message || `Falha no login: ${res.statusText}`);
     }
 
     const data = await res.json().catch(() => ({}));
@@ -209,6 +222,46 @@ export class FetchAuthGateway implements AuthGateway {
 
     if (!res.ok) {
       throw new AuthError("Código de backup inválido.");
+    }
+  }
+
+  async updateProfile(data: { name?: string; email?: string }): Promise<void> {
+    if (data.name) {
+      const resName = await fetch(`${this.baseUrl}/update-user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...this.headers,
+        },
+        credentials: "include",
+        body: JSON.stringify({ name: data.name }),
+      });
+
+      if (!resName.ok) {
+        const errorData = await resName.json().catch(() => ({}));
+        throw new AuthError(
+          errorData.message || "Falha ao atualizar o nome do usuário.",
+        );
+      }
+    }
+
+    if (data.email) {
+      const resEmail = await fetch(`${this.baseUrl}/change-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...this.headers,
+        },
+        credentials: "include",
+        body: JSON.stringify({ newEmail: data.email }),
+      });
+
+      if (!resEmail.ok) {
+        const errorData = await resEmail.json().catch(() => ({}));
+        throw new AuthError(
+          errorData.message || "Falha ao solicitar alteração de e-mail.",
+        );
+      }
     }
   }
 }

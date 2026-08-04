@@ -2,6 +2,7 @@ import { createServerAdminGateway } from '@/src/infrastructure/admin/ServerAdmin
 import { ListUsersUseCase } from '@/src/application/use-cases/admin/ListUsersUseCase';
 import { User } from '@/src/domain/entities/User';
 import Link from 'next/link';
+import { Button, Input, Badge, Alert } from '@/src/components/ui';
 
 interface PageProps {
   searchParams: Promise<{
@@ -51,25 +52,22 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-900/60 p-4 rounded-2xl border border-gray-800">
         <form method="GET" className="flex items-center space-x-3 w-full sm:w-auto">
-          <input
+          <Input
             type="text"
             name="q"
             defaultValue={q}
             placeholder="Buscar por nome..."
-            className="px-4 py-2 bg-gray-950 border border-gray-800 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors w-full sm:w-64"
+            className="w-full sm:w-64 py-2 text-sm"
           />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-medium rounded-xl border border-gray-700 transition-all"
-          >
+          <Button type="submit" variant="secondary" size="md">
             Buscar
-          </button>
+          </Button>
         </form>
 
         <div className="flex space-x-2">
           <Link
             href="/admin/users"
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-xl border transition-all ${
               bannedFilter === undefined
                 ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
                 : 'bg-gray-800/40 text-gray-400 border-gray-800 hover:text-white'
@@ -79,7 +77,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
           </Link>
           <Link
             href="/admin/users?banned=false"
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-xl border transition-all ${
               bannedFilter === 'false'
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                 : 'bg-gray-800/40 text-gray-400 border-gray-800 hover:text-white'
@@ -89,9 +87,9 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
           </Link>
           <Link
             href="/admin/users?banned=true"
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-xl border transition-all ${
               bannedFilter === 'true'
-                ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                ? 'bg-red-500/20 text-red-300 border-red-500/30'
                 : 'bg-gray-800/40 text-gray-400 border-gray-800 hover:text-white'
             }`}
           >
@@ -100,11 +98,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {error && (
-        <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm">
-          {error}
-        </div>
-      )}
+      {error && <Alert variant="danger">{error}</Alert>}
 
       <div className="bg-gray-900/60 border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
         <table className="w-full text-left text-sm text-gray-300">
@@ -134,34 +128,22 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span
-                      className={`inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full border ${
-                        user.isAdmin
-                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                          : 'bg-gray-800 text-gray-300 border-gray-700'
-                      }`}
-                    >
+                    <Badge variant={user.isAdmin ? 'indigo' : 'neutral'} pill>
                       {user.role || 'user'}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="px-6 py-4">
                     {user.twoFactorEnabled ? (
-                      <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                        Habilitado
-                      </span>
+                      <Badge variant="success">Habilitado</Badge>
                     ) : (
                       <span className="text-xs text-gray-500">Desabilitado</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
                     {user.banned ? (
-                      <span className="text-xs font-medium text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
-                        Banido
-                      </span>
+                      <Badge variant="danger">Banido</Badge>
                     ) : (
-                      <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                        Ativo
-                      </span>
+                      <Badge variant="success">Ativo</Badge>
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -186,19 +168,17 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
           </span>
           <div className="flex space-x-2">
             {offset > 0 && (
-              <Link
-                href={`/admin/users?offset=${Math.max(0, offset - limit)}&limit=${limit}&q=${q}`}
-                className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg border border-gray-700"
-              >
-                Anterior
+              <Link href={`/admin/users?offset=${Math.max(0, offset - limit)}&limit=${limit}&q=${q}`}>
+                <Button variant="secondary" size="sm">
+                  Anterior
+                </Button>
               </Link>
             )}
             {offset + limit < total && (
-              <Link
-                href={`/admin/users?offset=${offset + limit}&limit=${limit}&q=${q}`}
-                className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg border border-gray-700"
-              >
-                Próxima
+              <Link href={`/admin/users?offset=${offset + limit}&limit=${limit}&q=${q}`}>
+                <Button variant="secondary" size="sm">
+                  Próxima
+                </Button>
               </Link>
             )}
           </div>

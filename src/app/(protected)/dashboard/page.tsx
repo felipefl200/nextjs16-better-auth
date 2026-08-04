@@ -1,5 +1,6 @@
 import { getRequiredSession } from "@/src/infrastructure/auth/getRequiredSession";
 import Link from "next/link";
+import { Card, Badge } from "@/src/components/ui";
 
 export default async function DashboardPage() {
   const session = await getRequiredSession();
@@ -17,14 +18,14 @@ export default async function DashboardPage() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-linear-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 p-6 rounded-2xl">
+        <Card variant="gradient">
           <div className="flex justify-between items-start mb-4">
             <h3 className="text-xl font-semibold text-indigo-400">
               Seu Perfil
             </h3>
-            <span className="px-2.5 py-1 text-xs font-semibold bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-500/30">
+            <Badge variant="indigo" pill>
               Ativo
-            </span>
+            </Badge>
           </div>
           <p className="text-gray-300 text-sm mb-1">
             <strong>Nome:</strong> {session.user.name}
@@ -38,19 +39,19 @@ export default async function DashboardPage() {
           >
             Ver Perfil Completo →
           </Link>
-        </div>
+        </Card>
 
-        <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl">
+        <Card variant="default">
           <h3 className="text-xl font-semibold text-white mb-2">Segurança</h3>
           <p className="text-gray-400 text-sm mb-4">
             Sua sessão está ativa e sincronizada pelo middleware proxy.
           </p>
-          <span className="inline-block px-2.5 py-1 text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg">
+          <Badge variant="success">
             Sessão Válida
-          </span>
-        </div>
+          </Badge>
+        </Card>
 
-        <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl">
+        <Card variant="default">
           <h3 className="text-xl font-semibold text-white mb-2">
             Configurações
           </h3>
@@ -63,7 +64,7 @@ export default async function DashboardPage() {
           >
             Ir para Configurações →
           </Link>
-        </div>
+        </Card>
       </div>
     </div>
   );

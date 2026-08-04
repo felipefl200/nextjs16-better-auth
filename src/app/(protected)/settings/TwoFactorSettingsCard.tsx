@@ -6,6 +6,7 @@ import { FetchAuthGateway } from "@/src/infrastructure/auth/FetchAuthGateway";
 import { EnableTwoFactorUseCase } from "@/src/application/use-cases/EnableTwoFactorUseCase";
 import { VerifyTotpUseCase } from "@/src/application/use-cases/VerifyTotpUseCase";
 import { DisableTwoFactorUseCase } from "@/src/application/use-cases/DisableTwoFactorUseCase";
+import { Button, Input, Badge, Alert } from "@/src/components/ui";
 
 export default function TwoFactorSettingsCard({
   initialTwoFactorEnabled = false,
@@ -39,7 +40,7 @@ export default function TwoFactorSettingsCard({
 
   const secretKey = extractSecret(totpURI);
 
-  const handleStartSetup = async (e: React.SubmitEvent<HTMLFormElement>) => {
+  const handleStartSetup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
@@ -145,13 +146,9 @@ export default function TwoFactorSettingsCard({
             Autenticação em Duas Etapas (2FA)
           </h4>
           {isTwoFactorEnabled ? (
-            <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md uppercase tracking-wider">
-              Ativado
-            </span>
+            <Badge variant="success">ATIVADO</Badge>
           ) : (
-            <span className="px-2 py-0.5 text-[10px] font-bold bg-gray-800 text-gray-400 rounded-md uppercase tracking-wider">
-              Desativado
-            </span>
+            <Badge variant="neutral">DESATIVADO</Badge>
           )}
         </div>
         <p className="text-xs text-gray-400 mt-1">
@@ -161,20 +158,17 @@ export default function TwoFactorSettingsCard({
       </div>
 
       {step === "idle" && (
-        <button
+        <Button
           onClick={() => {
             setError(null);
             setPassword("");
             setStep(isTwoFactorEnabled ? "disable" : "password");
           }}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-            isTwoFactorEnabled
-              ? "bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30"
-              : "bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
-          }`}
+          variant={isTwoFactorEnabled ? "danger" : "outline"}
+          size="sm"
         >
           {isTwoFactorEnabled ? "Desativar 2FA" : "Configurar 2FA"}
-        </button>
+        </Button>
       )}
 
       {/* Step 1: Confirmação de Senha para Habilitar */}
@@ -184,39 +178,31 @@ export default function TwoFactorSettingsCard({
             Confirme sua senha para habilitar o 2FA
           </h5>
 
-          {error && (
-            <div className="text-xs text-red-400 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
-              {error}
-            </div>
-          )}
+          {error && <Alert variant="danger">{error}</Alert>}
 
           <form
             onSubmit={handleStartSetup}
-            className="flex flex-col sm:flex-row gap-3"
+            className="flex flex-col sm:flex-row gap-3 items-end"
           >
-            <input
+            <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Digite sua senha atual"
               required
-              className="flex-1 px-4 py-2 bg-gray-950 border border-gray-800 rounded-xl text-xs text-white outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
-              >
+              <Button type="submit" isLoading={isLoading} size="md">
                 {isLoading ? "Gerando..." : "Avançar"}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => setStep("idle")}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-medium"
+                variant="secondary"
+                size="md"
               >
                 Cancelar
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -233,17 +219,13 @@ export default function TwoFactorSettingsCard({
               type="button"
               onClick={handleCancelUnfinishedSetup}
               disabled={isLoading}
-              className="text-xs text-gray-400 hover:text-red-400 transition-colors font-medium"
+              className="text-xs text-gray-400 hover:text-red-400 transition-colors font-medium cursor-pointer"
             >
               Cancelar e Desistir
             </button>
           </div>
 
-          {error && (
-            <div className="text-xs text-red-400 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
-              {error}
-            </div>
-          )}
+          {error && <Alert variant="danger">{error}</Alert>}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             {/* Visual QR Code Container */}
@@ -276,13 +258,14 @@ export default function TwoFactorSettingsCard({
                   <code className="flex-1 p-3 bg-black/80 rounded-xl text-xs font-mono text-white tracking-widest break-all border border-gray-800 select-all">
                     {secretKey || totpURI}
                   </code>
-                  <button
+                  <Button
                     type="button"
                     onClick={() => handleCopyKey(secretKey || totpURI)}
-                    className="px-3 py-3 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold transition-all shrink-0"
+                    variant="outline"
+                    size="sm"
                   >
                     {copiedKey ? "Copiado!" : "Copiar"}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -291,7 +274,7 @@ export default function TwoFactorSettingsCard({
                 <button
                   type="button"
                   onClick={() => setShowFullUri(!showFullUri)}
-                  className="text-[11px] text-gray-500 hover:text-gray-400 font-medium underline"
+                  className="text-[11px] text-gray-500 hover:text-gray-400 font-medium underline cursor-pointer"
                 >
                   {showFullUri
                     ? "Ocultar URI OTP completa"
@@ -361,21 +344,24 @@ export default function TwoFactorSettingsCard({
                 required
                 className="w-full sm:w-40 px-4 py-2.5 bg-gray-900 border border-gray-800 rounded-xl text-center font-mono text-base tracking-widest text-white outline-none focus:ring-2 focus:ring-emerald-500"
               />
-              <button
+              <Button
                 type="submit"
-                disabled={isLoading || verificationCode.length !== 6}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                isLoading={isLoading}
+                disabled={verificationCode.length !== 6}
+                variant="primary"
+                size="md"
               >
                 {isLoading ? "Verificando..." : "Confirmar e Ativar 2FA"}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleCancelUnfinishedSetup}
                 disabled={isLoading}
-                className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-medium"
+                variant="secondary"
+                size="md"
               >
                 Cancelar
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -391,39 +377,31 @@ export default function TwoFactorSettingsCard({
             Digite sua senha para confirmar a desativação do 2FA.
           </p>
 
-          {error && (
-            <div className="text-xs text-red-400 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
-              {error}
-            </div>
-          )}
+          {error && <Alert variant="danger">{error}</Alert>}
 
           <form
             onSubmit={handleDisableTwoFactor}
-            className="flex flex-col sm:flex-row gap-3"
+            className="flex flex-col sm:flex-row gap-3 items-end"
           >
-            <input
+            <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Sua senha atual"
               required
-              className="flex-1 px-4 py-2 bg-gray-950 border border-gray-800 rounded-xl text-xs text-white outline-none focus:ring-2 focus:ring-red-500"
             />
             <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
-              >
+              <Button type="submit" isLoading={isLoading} variant="danger" size="md">
                 {isLoading ? "Desativando..." : "Confirmar Desativação"}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => setStep("idle")}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-medium"
+                variant="secondary"
+                size="md"
               >
                 Cancelar
-              </button>
+              </Button>
             </div>
           </form>
         </div>
