@@ -4,6 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserDTO } from '@/src/domain/entities/User';
 import { Card, Button, Input, Alert } from '@/src/components/ui';
+import { FetchAdminGateway } from '@/src/infrastructure/admin/FetchAdminGateway';
+import { SetUserRoleUseCase } from '@/src/application/use-cases/admin/SetUserRoleUseCase';
+import { BanUserUseCase } from '@/src/application/use-cases/admin/BanUserUseCase';
+import { UnbanUserUseCase } from '@/src/application/use-cases/admin/UnbanUserUseCase';
+import { SetUserPasswordUseCase } from '@/src/application/use-cases/admin/SetUserPasswordUseCase';
+import { ImpersonateUserUseCase } from '@/src/application/use-cases/admin/ImpersonateUserUseCase';
+import { RemoveUserUseCase } from '@/src/application/use-cases/admin/RemoveUserUseCase';
 
 interface UserManagementActionsProps {
   targetUser: UserDTO;
@@ -18,65 +25,75 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
   const [banReason, setBanReason] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
-  const executeAction = async (endpoint: string, body: Record<string, unknown>, successText: string) => {
+  const getGateway = () => new FetchAdminGateway();
+
+  const handleRoleChange = async (newRole: string) => {
     setLoading(true);
     setMessage(null);
-
     try {
-      const res = await fetch(`/api/auth/admin/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ userId: targetUser.id, ...body }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Falha na operação');
-      }
-
-      setMessage({ type: 'success', text: successText });
+      const useCase = new SetUserRoleUseCase(getGateway());
+      await useCase.execute(targetUser.id, newRole);
+      setMessage({ type: 'success', text: `Role alterada para ${newRole} com sucesso!` });
       router.refresh();
     } catch (err: unknown) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Erro desconhecido' });
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Erro ao alterar papel' });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRoleChange = (newRole: string) => {
-    executeAction('set-role', { role: newRole }, `Role alterada para ${newRole} com sucesso!`);
-  };
-
-  const handleBan = () => {
-    executeAction('ban-user', { banReason: banReason || undefined }, 'Usuário banido com sucesso!');
-  };
-
-  const handleUnban = () => {
-    executeAction('unban-user', {}, 'Usuário desbanido com sucesso!');
-  };
-
-  const handleResetPassword = () => {
-    if (!newPassword || newPassword.length < 6) {
-      setMessage({ type: 'error', text: 'Informe uma nova senha com no mínimo 6 caracteres.' });
-      return;
+  const handleBan = async () => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      const useCase = new BanUserUseCase(getGateway());
+      await useCase.execute(targetUser.id, undefined, banReason.trim() || undefined);
+      setMessage({ type: 'success', text: 'Usuário banido com sucesso!' });
+      router.refresh();
+    } catch (err: unknown) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Erro ao banir usuário' });
+    } finally {
+      setLoading(false);
     }
-    executeAction('set-user-password', { newPassword }, 'Senha redefinida com sucesso!');
-    setNewPassword('');
+  };
+
+  const handleUnban = async () => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      const useCase = new UnbanUserUseCase(getGateway());
+      await useCase.execute(targetUser.id);
+      setMessage({ type: 'success', text: 'Usuário desbanido com sucesso!' });
+      router.refresh();
+    } catch (err: unknown) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Erro ao desbanir usuário' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      const useCase = new SetUserPasswordUseCase(getGateway());
+      await useCase.execute(targetUser.id, newPassword);
+      setMessage({ type: 'success', text: 'Senha redefinida com sucesso!' });
+      setNewPassword('');
+      router.refresh();
+    } catch (err: unknown) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Erro ao redefinir senha' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleImpersonate = async () => {
     setLoading(true);
+    setMessage(null);
     try {
-      const res = await fetch('/api/auth/admin/impersonate-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ userId: targetUser.id }),
-      });
-
-      if (!res.ok) throw new Error('Falha ao impersonar usuário');
-
+      const useCase = new ImpersonateUserUseCase(getGateway());
+      await useCase.execute(targetUser.id);
       window.location.href = '/dashboard';
     } catch (err: unknown) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Erro ao impersonar' });
@@ -88,8 +105,17 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
     if (!confirm(`Tem certeza que deseja EXCLUIR PERMANENTEMENTE o usuário ${targetUser.name}?`)) {
       return;
     }
-    executeAction('remove-user', {}, 'Usuário removido!');
-    setTimeout(() => router.push('/admin/users'), 1000);
+    setLoading(true);
+    setMessage(null);
+    try {
+      const useCase = new RemoveUserUseCase(getGateway());
+      await useCase.execute(targetUser.id);
+      setMessage({ type: 'success', text: 'Usuário removido com sucesso!' });
+      setTimeout(() => router.push('/admin/users'), 1000);
+    } catch (err: unknown) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Erro ao remover usuário' });
+      setLoading(false);
+    }
   };
 
   return (
@@ -173,7 +199,7 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
         <div className="flex items-center space-x-2">
           <Input
             type="password"
-            placeholder="Nova senha (min 6)"
+            placeholder="Nova senha (min 8)"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
           />

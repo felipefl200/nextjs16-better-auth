@@ -40,7 +40,7 @@ export default function TwoFactorSettingsCard({
 
   const secretKey = extractSecret(totpURI);
 
-  const handleStartSetup = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleStartSetup = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
@@ -64,7 +64,7 @@ export default function TwoFactorSettingsCard({
     }
   };
 
-  const handleVerifyTotp = async (e: React.FormEvent) => {
+  const handleVerifyTotp = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
@@ -108,7 +108,9 @@ export default function TwoFactorSettingsCard({
     }
   };
 
-  const handleDisableTwoFactor = async (e: React.FormEvent) => {
+  const handleDisableTwoFactor = async (
+    e: React.SubmitEvent<HTMLFormElement>,
+  ) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
@@ -391,7 +393,12 @@ export default function TwoFactorSettingsCard({
               required
             />
             <div className="flex gap-2">
-              <Button type="submit" isLoading={isLoading} variant="danger" size="md">
+              <Button
+                type="submit"
+                isLoading={isLoading}
+                variant="danger"
+                size="md"
+              >
                 {isLoading ? "Desativando..." : "Confirmar Desativação"}
               </Button>
               <Button

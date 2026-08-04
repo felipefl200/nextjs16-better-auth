@@ -21,7 +21,7 @@ export default function ProfileForm({ user }: ProfileFormProps) {
     text: string;
   } | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMessage(null);
 
@@ -47,9 +47,18 @@ export default function ProfileForm({ user }: ProfileFormProps) {
         email: hasEmailChanged ? email.trim() : undefined,
       });
 
+      let successText = "Perfil atualizado com sucesso!";
+      if (hasEmailChanged && hasNameChanged) {
+        successText =
+          "Nome atualizado! Solicitação de alteração de e-mail enviada com sucesso.";
+      } else if (hasEmailChanged) {
+        successText =
+          "Solicitação de alteração de e-mail enviada com sucesso! Verifique a confirmação.";
+      }
+
       setMessage({
         type: "success",
-        text: "Perfil atualizado com sucesso!",
+        text: successText,
       });
       router.refresh();
     } catch (err: unknown) {
@@ -100,7 +109,10 @@ export default function ProfileForm({ user }: ProfileFormProps) {
             {/* Campo Somente Leitura: ID do Usuário */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                ID do Usuário <span className="text-xs text-gray-500 font-normal">(Somente Leitura)</span>
+                ID do Usuário{" "}
+                <span className="text-xs text-gray-500 font-normal">
+                  (Somente Leitura)
+                </span>
               </label>
               <div className="px-4 py-3 bg-gray-950/60 border border-gray-800/60 rounded-xl text-xs font-mono text-gray-400 select-all break-all cursor-not-allowed">
                 {user.id}
@@ -110,10 +122,15 @@ export default function ProfileForm({ user }: ProfileFormProps) {
             {/* Campo Somente Leitura: Status da Conta */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Status da Conta <span className="text-xs text-gray-500 font-normal">(Somente Leitura)</span>
+                Status da Conta{" "}
+                <span className="text-xs text-gray-500 font-normal">
+                  (Somente Leitura)
+                </span>
               </label>
               <div className="px-4 py-2.5 bg-gray-950/60 border border-gray-800/60 rounded-xl text-sm flex items-center justify-between cursor-not-allowed">
-                <span className="text-gray-300 font-medium">Conta Verificada</span>
+                <span className="text-gray-300 font-medium">
+                  Conta Verificada
+                </span>
                 {user.banned ? (
                   <Badge variant="danger">Suspensa</Badge>
                 ) : (

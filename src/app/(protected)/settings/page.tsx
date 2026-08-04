@@ -1,5 +1,6 @@
 import { getRequiredSession } from "@/src/infrastructure/auth/getRequiredSession";
 import TwoFactorSettingsCard from "./TwoFactorSettingsCard";
+import ActiveSessionsCard from "./ActiveSessionsCard";
 
 export default async function SettingsPage() {
   const session = await getRequiredSession();
@@ -21,15 +22,10 @@ export default async function SettingsPage() {
           <div className="space-y-4">
             <TwoFactorSettingsCard initialTwoFactorEnabled={Boolean(session.user.twoFactorEnabled)} />
 
-            <div className="flex items-center justify-between p-4 bg-gray-950/50 rounded-xl border border-gray-800">
-              <div>
-                <h4 className="text-sm font-medium text-white">Sessões Ativas</h4>
-                <p className="text-xs text-gray-400">Sua sessão atual foi autenticada via NestJS & Better Auth.</p>
-              </div>
-              <span className="px-3 py-1 text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
-                Sessão Atual
-              </span>
-            </div>
+            <ActiveSessionsCard
+              userId={session.user.id}
+              currentSessionToken={session.token}
+            />
           </div>
         </div>
 

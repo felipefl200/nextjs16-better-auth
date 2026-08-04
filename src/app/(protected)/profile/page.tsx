@@ -1,19 +1,11 @@
 import { getRequiredSession } from "@/src/infrastructure/auth/getRequiredSession";
 import { Card, Badge } from "@/src/components/ui";
 import ProfileForm from "./ProfileForm";
+import AvatarUpload from "./AvatarUpload";
 
 export default async function ProfilePage() {
   const session = await getRequiredSession();
   const userDTO = session.user.toDTO();
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -25,10 +17,9 @@ export default async function ProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* User Avatar Card */}
         <Card className="flex flex-col items-center text-center h-fit">
-          <div className="w-24 h-24 rounded-full bg-linear-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl shadow-indigo-500/20 mb-4 border-2 border-indigo-400/30">
-            {getInitials(userDTO.name || "User")}
-          </div>
-          <h2 className="text-xl font-bold text-white mb-1">
+          <AvatarUpload user={userDTO} />
+
+          <h2 className="text-xl font-bold text-white mt-4 mb-1">
             {userDTO.name}
           </h2>
           <p className="text-gray-400 text-sm mb-4">{userDTO.email}</p>

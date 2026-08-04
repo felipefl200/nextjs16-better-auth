@@ -15,6 +15,9 @@ export class CreateUserUseCase {
     if (!input.email || !input.password || !input.name) {
       throw new Error('email, password e name são obrigatórios');
     }
+    if (input.password.length < 8) {
+      throw new Error('A senha deve ter no mínimo 8 caracteres');
+    }
     return this.adminGateway.createUser(input);
   }
 }

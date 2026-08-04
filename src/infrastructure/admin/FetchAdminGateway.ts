@@ -38,10 +38,20 @@ export class FetchAdminGateway implements AdminGateway {
     }
 
     if (!res.ok) {
-      const errorBody = await res.text().catch(() => '');
-      throw new AdminError(
-        `Falha na operação administrativa: ${res.status} ${errorBody}`,
-      );
+      let message = '';
+      try {
+        const json = await res.json();
+        message = json.message || json.error || '';
+      } catch {
+        message = await res.text().catch(() => '');
+      }
+
+      const lower = message.toLowerCase();
+      if (lower.includes('cannot post') || lower.includes('cannot get') || res.status === 404) {
+        throw new AdminError('Rota administrativa não encontrada no servidor.');
+      }
+
+      throw new AdminError(message || `Falha na operação administrativa (código HTTP ${res.status}).`);
     }
 
     const text = await res.text();
@@ -57,6 +67,7 @@ export class FetchAdminGateway implements AdminGateway {
       data.id as string,
       data.email as string,
       data.name as string,
+      (data.image as string) ?? null,
       Boolean(data.twoFactorEnabled),
       (data.role as string) ?? undefined,
       (data.banned as boolean) ?? undefined,

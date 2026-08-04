@@ -1,41 +1,40 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Card, Input, Button, Alert } from '@/src/components/ui';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Card, Input, Button, Alert } from "@/src/components/ui";
+import { FetchAdminGateway } from "@/src/infrastructure/admin/FetchAdminGateway";
+import { CreateUserUseCase } from "@/src/application/use-cases/admin/CreateUserUseCase";
 
 export default function NewUserPage() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('user');
-  const [error, setError] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("user");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/admin/create-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ name, email, password, role }),
+      const gateway = new FetchAdminGateway();
+      const useCase = new CreateUserUseCase(gateway);
+      await useCase.execute({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        role,
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || 'Falha ao criar usuário');
-      }
-
-      router.push('/admin/users');
+      router.push("/admin/users");
       router.refresh();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erro ao cadastrar');
+      setError(err instanceof Error ? err.message : "Erro ao cadastrar");
     } finally {
       setLoading(false);
     }
@@ -53,7 +52,11 @@ export default function NewUserPage() {
         </Link>
       </div>
 
-      {error && <Alert variant="danger" className="mb-6">{error}</Alert>}
+      {error && (
+        <Alert variant="danger" className="mb-6">
+          {error}
+        </Alert>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <Input
@@ -78,10 +81,10 @@ export default function NewUserPage() {
           label="Senha Inicial"
           type="password"
           required
-          minLength={6}
+          minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Mínimo 6 caracteres"
+          placeholder="Mínimo 8 caracteres"
         />
 
         <div>
@@ -105,7 +108,7 @@ export default function NewUserPage() {
           fullWidth
           size="lg"
         >
-          {loading ? 'Cadastrando...' : 'Criar Usuário'}
+          {loading ? "Cadastrando..." : "Criar Usuário"}
         </Button>
       </form>
     </Card>

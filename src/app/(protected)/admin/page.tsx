@@ -11,12 +11,17 @@ export default async function AdminDashboardPage() {
   let adminCount = 0;
 
   try {
-    const result = await listUsersUseCase.execute({ limit: 100 });
-    totalUsers = result.total;
-    bannedCount = result.users.filter((u) => u.banned).length;
-    adminCount = result.users.filter((u) => u.isAdmin).length;
+    const [totalRes, bannedRes, adminRes] = await Promise.all([
+      listUsersUseCase.execute({ limit: 1 }),
+      listUsersUseCase.execute({ limit: 1, filterField: 'banned', filterValue: true }),
+      listUsersUseCase.execute({ limit: 1, filterField: 'role', filterValue: 'admin' }),
+    ]);
+
+    totalUsers = totalRes.total;
+    bannedCount = bannedRes.total;
+    adminCount = adminRes.total;
   } catch {
-    // Caso a API ainda não possua usuários ou falhe
+    // Fallback gracioso
   }
 
   return (

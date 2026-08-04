@@ -8,7 +8,11 @@ import { Card, Input, Button, Alert } from "@/src/components/ui";
 
 function getSafeRedirectUrl(urlParam: string | null): string {
   if (!urlParam) return "/dashboard";
-  if (urlParam.startsWith("/") && !urlParam.startsWith("//") && !urlParam.includes(":")) {
+  if (
+    urlParam.startsWith("/") &&
+    !urlParam.startsWith("//") &&
+    !urlParam.includes(":")
+  ) {
     return urlParam;
   }
   return "/dashboard";
@@ -26,7 +30,7 @@ function TwoFactorChallengeForm() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setIsPending(true);
@@ -89,7 +93,11 @@ function TwoFactorChallengeForm() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Input
-          label={useBackupCode ? "Código de Backup" : "Código de Autenticação (6 dígitos)"}
+          label={
+            useBackupCode
+              ? "Código de Backup"
+              : "Código de Autenticação (6 dígitos)"
+          }
           type="text"
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -153,7 +161,9 @@ export default function TwoFactorChallengePage() {
       <div className="absolute top-[-20%] left-[-10%] w-96 h-96 bg-indigo-500/30 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-20%] right-[-10%] w-96 h-96 bg-purple-500/20 rounded-full blur-[120px]" />
 
-      <Suspense fallback={<div className="text-white text-sm">Carregando...</div>}>
+      <Suspense
+        fallback={<div className="text-white text-sm">Carregando...</div>}
+      >
         <TwoFactorChallengeForm />
       </Suspense>
     </div>

@@ -8,6 +8,54 @@ import {
 import { Session } from "@/src/domain/entities/Session";
 import { User } from "@/src/domain/entities/User";
 
+function translateErrorMessage(
+  msg?: string,
+  fallback: string = "Ocorreu um erro no servidor.",
+): string {
+  if (!msg) return fallback;
+  const lower = msg.toLowerCase();
+
+  if (
+    lower.includes("cannot post") ||
+    lower.includes("cannot get") ||
+    lower.includes("not found") ||
+    lower.includes("404")
+  ) {
+    return "Rota de autenticação não encontrada no servidor.";
+  }
+  if (
+    lower.includes("invalid email or password") ||
+    lower.includes("invalid credentials") ||
+    lower.includes("invalid password")
+  ) {
+    return "E-mail ou senha incorretos.";
+  }
+  if (lower.includes("user not found")) {
+    return "Usuário não encontrado.";
+  }
+  if (
+    lower.includes("user already exists") ||
+    lower.includes("email already in use") ||
+    lower.includes("já está em uso")
+  ) {
+    return "Este e-mail já está em uso por outra conta.";
+  }
+  if (lower.includes("unauthorized") || lower.includes("forbidden")) {
+    return "Acesso não autorizado. Faça login para continuar.";
+  }
+  if (lower.includes("banned") || lower.includes("suspens")) {
+    return "Sua conta foi banida. Entre em contato com o suporte se achar que isso é um erro.";
+  }
+  if (lower.includes("invalid code") || lower.includes("invalid totp")) {
+    return "Código de autenticação inválido ou expirado.";
+  }
+  if (lower.includes("failed to fetch")) {
+    return "Não foi possível conectar ao servidor. Verifique sua conexão de rede.";
+  }
+
+  return msg;
+}
+
 export class FetchAuthGateway implements AuthGateway {
   private baseUrl: string;
   private headers: Record<string, string>;
@@ -45,13 +93,15 @@ export class FetchAuthGateway implements AuthGateway {
           (data.message.toLowerCase().includes("banid") ||
             data.message.toLowerCase().includes("suspens")))
       ) {
-        throw new UserBannedError(data?.message);
+        throw new UserBannedError(translateErrorMessage(data?.message, "Sua conta foi banida."));
       }
 
       if (res.status === 401 || res.status === 400) {
         throw new InvalidCredentialsError();
       }
-      throw new AuthError(data?.message || `Falha no login: ${res.statusText}`);
+      throw new AuthError(
+        translateErrorMessage(data?.message || res.statusText, "Falha no login."),
+      );
     }
 
     const data = await res.json().catch(() => ({}));
@@ -73,7 +123,10 @@ export class FetchAuthGateway implements AuthGateway {
       if (res.status === 400 || res.status === 409) {
         throw new UserAlreadyExistsError();
       }
-      throw new AuthError(`Falha no cadastro: ${res.statusText}`);
+      const data = await res.json().catch(() => ({}));
+      throw new AuthError(
+        translateErrorMessage(data?.message || res.statusText, "Falha no cadastro."),
+      );
     }
   }
 
@@ -104,6 +157,7 @@ export class FetchAuthGateway implements AuthGateway {
       data.user.id,
       data.user.email,
       data.user.name,
+      data.user.image ?? null,
       Boolean(data.user.twoFactorEnabled),
       data.user.role ?? undefined,
       data.user.banned ?? undefined,
@@ -128,7 +182,7 @@ export class FetchAuthGateway implements AuthGateway {
     });
 
     if (!res.ok) {
-      throw new AuthError(`Falha no logout: ${res.statusText}`);
+      throw new AuthError("Falha ao encerrar a sessão.");
     }
   }
 
@@ -146,7 +200,10 @@ export class FetchAuthGateway implements AuthGateway {
     });
 
     if (!res.ok) {
-      throw new AuthError(`Falha ao habilitar 2FA: ${res.statusText}`);
+      const data = await res.json().catch(() => ({}));
+      throw new AuthError(
+        translateErrorMessage(data?.message || res.statusText, "Falha ao habilitar 2FA."),
+      );
     }
 
     const data = await res.json();
@@ -225,8 +282,16 @@ export class FetchAuthGateway implements AuthGateway {
     }
   }
 
-  async updateProfile(data: { name?: string; email?: string }): Promise<void> {
-    if (data.name) {
+  async updateProfile(data: {
+    name?: string;
+    email?: string;
+    image?: string;
+  }): Promise<void> {
+    if (data.name || data.image) {
+      const payload: { name?: string; image?: string } = {};
+      if (data.name) payload.name = data.name;
+      if (data.image) payload.image = data.image;
+
       const resName = await fetch(`${this.baseUrl}/update-user`, {
         method: "POST",
         headers: {
@@ -234,13 +299,13 @@ export class FetchAuthGateway implements AuthGateway {
           ...this.headers,
         },
         credentials: "include",
-        body: JSON.stringify({ name: data.name }),
+        body: JSON.stringify(payload),
       });
 
       if (!resName.ok) {
         const errorData = await resName.json().catch(() => ({}));
         throw new AuthError(
-          errorData.message || "Falha ao atualizar o nome do usuário.",
+          translateErrorMessage(errorData.message, "Falha ao atualizar o perfil do usuário."),
         );
       }
     }
@@ -256,12 +321,62 @@ export class FetchAuthGateway implements AuthGateway {
         body: JSON.stringify({ newEmail: data.email }),
       });
 
-      if (!resEmail.ok) {
-        const errorData = await resEmail.json().catch(() => ({}));
+      const errorData = await resEmail.json().catch(() => ({}));
+
+      if (
+        !resEmail.ok ||
+        errorData?.status === false ||
+        errorData?.error ||
+        errorData?.code === "USER_ALREADY_EXISTS" ||
+        errorData?.code === "EMAIL_ALREADY_IN_USE"
+      ) {
+        const msg = typeof errorData?.message === "string" ? errorData.message.toLowerCase() : "";
+        const code = errorData?.code || "";
+
+        if (
+          resEmail.status === 400 ||
+          resEmail.status === 409 ||
+          resEmail.status === 422 ||
+          code === "USER_ALREADY_EXISTS" ||
+          code === "EMAIL_ALREADY_IN_USE" ||
+          msg.includes("already") ||
+          msg.includes("exist") ||
+          msg.includes("in use") ||
+          msg.includes("uso")
+        ) {
+          throw new UserAlreadyExistsError("Este e-mail já está em uso por outra conta.");
+        }
+
         throw new AuthError(
-          errorData.message || "Falha ao solicitar alteração de e-mail.",
+          translateErrorMessage(errorData?.message, "Falha ao solicitar alteração de e-mail."),
         );
       }
     }
+  }
+
+  async uploadAvatar(file: File): Promise<{ filename: string }> {
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    const targetUrl = `${this.baseUrl.replace(/\/api\/auth$/, "")}/api/upload/avatar`;
+
+    const res = await fetch(targetUrl, {
+      method: "POST",
+      headers: {
+        ...this.headers,
+      },
+      credentials: "include",
+      body: formData,
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new AuthError(
+        translateErrorMessage(data.message, "Falha ao fazer upload da imagem de perfil."),
+      );
+    }
+
+    return { filename: data.filename };
   }
 }

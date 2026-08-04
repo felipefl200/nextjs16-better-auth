@@ -7,8 +7,8 @@ export class SetUserPasswordUseCase {
     if (!userId) {
       throw new Error('userId é obrigatório');
     }
-    if (!newPassword || newPassword.length < 6) {
-      throw new Error('A senha deve ter no mínimo 6 caracteres');
+    if (!newPassword || newPassword.length < 8) {
+      throw new Error('A senha deve ter no mínimo 8 caracteres');
     }
     return this.adminGateway.setUserPassword(userId, newPassword);
   }

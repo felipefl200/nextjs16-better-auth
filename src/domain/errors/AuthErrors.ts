@@ -13,8 +13,8 @@ export class InvalidCredentialsError extends AuthError {
 }
 
 export class UserAlreadyExistsError extends AuthError {
-  constructor() {
-    super('Usuário já cadastrado');
+  constructor(message?: string) {
+    super(message || 'Este e-mail já está em uso por outra conta.');
     this.name = 'UserAlreadyExistsError';
   }
 }
