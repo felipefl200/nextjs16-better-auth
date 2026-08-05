@@ -92,6 +92,7 @@ export default function AvatarUpload({ user }: AvatarUploadProps) {
               height={96}
               src={currentImage}
               alt={user.name}
+              priority
               className="w-24 h-24 rounded-full object-cover shadow-xl border-2 border-indigo-500/30"
             />
           )
