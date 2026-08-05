@@ -16,8 +16,9 @@ interface PageProps {
 export default async function AdminUsersPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const q = params.q || '';
-  const offset = parseInt(params.offset || '0', 10);
-  const limit = parseInt(params.limit || '10', 10);
+  // Sanitiza paginação: valores seguros mesmo com query string manipulada
+  const offset = Math.max(0, parseInt(params.offset || '0', 10) || 0);
+  const limit = Math.min(Math.max(parseInt(params.limit || '10', 10) || 10, 1), 100);
   const bannedFilter = params.banned;
 
   const gateway = await createServerAdminGateway();
@@ -26,11 +27,9 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   let users: User[] = [];
   let total = 0;
   let error = '';
-
   try {
     const filterField = bannedFilter !== undefined ? 'banned' : undefined;
     const filterValue = bannedFilter === 'true';
-
     const result = await listUsersUseCase.execute({
       limit,
       offset,
@@ -47,11 +46,17 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
 
   const totalPages = Math.ceil(total / limit) || 1;
   const currentPage = Math.floor(offset / limit) + 1;
+  // Preserva o filtro ativo nos links de paginação
+  const bannedParam = bannedFilter !== undefined ? `&banned=${bannedFilter}` : '';
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-900/60 p-4 rounded-2xl border border-gray-800">
         <form method="GET" className="flex items-center space-x-3 w-full sm:w-auto">
+          {/* Mantém o filtro de status ao buscar por nome */}
+          {bannedFilter !== undefined && (
+            <input type="hidden" name="banned" value={bannedFilter} />
+          )}
           <Input
             type="text"
             name="q"
@@ -168,17 +173,17 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
           </span>
           <div className="flex space-x-2">
             {offset > 0 && (
-              <Link href={`/admin/users?offset=${Math.max(0, offset - limit)}&limit=${limit}&q=${q}`}>
-                <Button variant="secondary" size="sm">
-                  Anterior
-                </Button>
+              <Link
+                href={`/admin/users?offset=${Math.max(0, offset - limit)}&limit=${limit}&q=${q}${bannedParam}`}
+              >
+                <Button variant="secondary" size="sm">Anterior</Button>
               </Link>
             )}
             {offset + limit < total && (
-              <Link href={`/admin/users?offset=${offset + limit}&limit=${limit}&q=${q}`}>
-                <Button variant="secondary" size="sm">
-                  Próxima
-                </Button>
+              <Link
+                href={`/admin/users?offset=${offset + limit}&limit=${limit}&q=${q}${bannedParam}`}
+              >
+                <Button variant="secondary" size="sm">Próxima</Button>
               </Link>
             )}
           </div>
