@@ -31,26 +31,21 @@ export default function AvatarUpload({ user }: AvatarUploadProps) {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setError(null);
 
-    // Validação local de pré-visualização
     const maxSize = 2 * 1024 * 1024;
     if (file.size > maxSize) {
       setError("O arquivo excede o limite máximo de 2 MB.");
       return;
     }
-
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type.toLowerCase())) {
       setError("Formato inválido. Selecione uma imagem JPEG, PNG ou WebP.");
       return;
     }
 
-    // Criar URL local para preview imediato
     const localUrl = URL.createObjectURL(file);
     setPreviewUrl(localUrl);
-
     setIsUploading(true);
     try {
       const gateway = new FetchAuthGateway();
@@ -77,17 +72,29 @@ export default function AvatarUpload({ user }: AvatarUploadProps) {
         : `/uploads/avatars/${user.image}`
       : null);
 
+  const isBlob = Boolean(currentImage?.startsWith("blob:"));
+
   return (
     <div className="flex flex-col items-center">
       <div className="relative group mb-4">
         {currentImage ? (
-          <Image
-            width={96}
-            height={96}
-            src={currentImage}
-            alt={user.name}
-            className="w-24 h-24 rounded-full object-cover shadow-xl border-2 border-indigo-500/30"
-          />
+          isBlob ? (
+            // blob: não passa pelo otimizador do next/image
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={currentImage}
+              alt={user.name}
+              className="w-24 h-24 rounded-full object-cover shadow-xl border-2 border-indigo-500/30"
+            />
+          ) : (
+            <Image
+              width={96}
+              height={96}
+              src={currentImage}
+              alt={user.name}
+              className="w-24 h-24 rounded-full object-cover shadow-xl border-2 border-indigo-500/30"
+            />
+          )
         ) : (
           <div className="w-24 h-24 rounded-full bg-linear-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl shadow-indigo-500/20 border-2 border-indigo-400/30">
             {getInitials(user.name || "User")}
@@ -114,7 +121,6 @@ export default function AvatarUpload({ user }: AvatarUploadProps) {
         onChange={handleFileChange}
         className="hidden"
       />
-
       <Button
         type="button"
         variant="secondary"
@@ -124,7 +130,6 @@ export default function AvatarUpload({ user }: AvatarUploadProps) {
       >
         {user.image ? "Alterar Avatar" : "Enviar Avatar"}
       </Button>
-
       <span className="text-[11px] text-gray-500 mt-2">
         Formatos: JPG, PNG ou WebP (Máx. 2 MB)
       </span>
