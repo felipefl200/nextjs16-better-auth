@@ -1,27 +1,26 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
-/**
- * Componente client-side que sincroniza a sessão real no back-end.
- *
- * Como o proxy (middleware.ts) agora faz apenas uma checagem otimista do cookie,
- * a renovação real do cookie e a validação profunda ocorrem através dessa chamada
- * originada no cliente, vinculada a eventos de navegação.
- */
+const MIN_INTERVAL_MS = 30_000;
+
 export default function SessionRefresher() {
   const router = useRouter();
   const pathname = usePathname();
+  const lastRefreshRef = useRef(0);
 
   const refreshSession = useCallback(async () => {
+    const now = Date.now();
+    if (now - lastRefreshRef.current < MIN_INTERVAL_MS) return;
+    lastRefreshRef.current = now;
+
     try {
       const res = await fetch('/api/auth/get-session', {
         method: 'GET',
         credentials: 'include',
         cache: 'no-store',
       });
-
       if (res.status === 401) {
         // Sessão expirou de fato ou é inválida — redireciona
         router.push('/login');
