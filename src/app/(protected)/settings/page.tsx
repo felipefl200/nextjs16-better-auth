@@ -2,12 +2,14 @@ import { getRequiredSession } from "@/src/infrastructure/auth/getRequiredSession
 import { createServerAuthGateway } from "@/src/infrastructure/auth/ServerAuthGatewayFactory";
 import { ListSessionsUseCase } from "@/src/application/use-cases/ListSessionsUseCase";
 import TwoFactorSettingsCard from "./TwoFactorSettingsCard";
-import ActiveSessionsCard, { ActiveSessionDTO } from "./ActiveSessionsCard";
+import ActiveSessionsCard from "./ActiveSessionsCard";
+import type { ActiveSessionDTO } from "./ActiveSessionsCard";
 
 export default async function SettingsPage() {
   const session = await getRequiredSession();
 
   let initialSessions: ActiveSessionDTO[] = [];
+  let initialError: string | null = null;
   try {
     const gateway = await createServerAuthGateway();
     const useCase = new ListSessionsUseCase(gateway);
@@ -24,7 +26,10 @@ export default async function SettingsPage() {
           : String(s.expiresAt),
     }));
   } catch (err) {
-    console.error("Falha ao carregar sessões ativas no servidor:", err);
+    initialError =
+      err instanceof Error
+        ? err.message
+        : "Falha ao carregar as sessões ativas.";
   }
 
   return (
@@ -42,12 +47,14 @@ export default async function SettingsPage() {
           </h3>
 
           <div className="space-y-4">
-            <TwoFactorSettingsCard initialTwoFactorEnabled={Boolean(session.user.twoFactorEnabled)} />
-
+            <TwoFactorSettingsCard
+              initialTwoFactorEnabled={Boolean(session.user.twoFactorEnabled)}
+            />
             <ActiveSessionsCard
               userId={session.user.id}
               currentSessionToken={session.token}
               initialSessions={initialSessions}
+              initialError={initialError}
             />
           </div>
         </div>

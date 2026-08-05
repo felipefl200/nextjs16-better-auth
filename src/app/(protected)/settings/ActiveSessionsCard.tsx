@@ -20,16 +20,18 @@ interface ActiveSessionsCardProps {
   userId?: string;
   currentSessionToken: string;
   initialSessions: ActiveSessionDTO[];
+  initialError?: string | null;
 }
 
 export default function ActiveSessionsCard({
   currentSessionToken,
   initialSessions,
+  initialError,
 }: ActiveSessionsCardProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [revokingToken, setRevokingToken] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError || null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const handleRefresh = () => {
@@ -61,6 +63,8 @@ export default function ActiveSessionsCard({
     }
   };
 
+  const activeError = error || initialError;
+
   return (
     <div className="flex flex-col space-y-4 p-4 bg-gray-950/50 rounded-xl border border-gray-800">
       <div className="flex items-center justify-between">
@@ -80,9 +84,9 @@ export default function ActiveSessionsCard({
         </Button>
       </div>
 
-      {error && (
+      {activeError && (
         <Alert variant="danger" className="text-xs py-2 px-3">
-          {error}
+          {activeError}
         </Alert>
       )}
 
@@ -92,7 +96,7 @@ export default function ActiveSessionsCard({
         </Alert>
       )}
 
-      {initialSessions.length === 0 ? (
+      {initialSessions.length === 0 && !activeError ? (
         <div className="text-xs text-gray-400 py-2">
           Nenhuma sessão ativa encontrada.
         </div>
