@@ -44,13 +44,22 @@ export default function ActiveSessionsCard({
   };
 
   const handleRevoke = async (token: string) => {
+    const isCurrentSession = token === currentSessionToken;
     setRevokingToken(token);
     setError(null);
     setSuccess(null);
+
     try {
       const gateway = new FetchAuthGateway();
       const useCase = new RevokeSessionUseCase(gateway);
       await useCase.execute(token);
+
+      if (isCurrentSession) {
+        setSuccess("Sessão atual revogada. Redirecionando para o login...");
+        window.location.assign("/login");
+        return;
+      }
+
       // Otimista: remove da lista imediatamente
       setRevokedTokens((prev) =>
         prev.includes(token) ? prev : [...prev, token],
@@ -139,16 +148,14 @@ export default function ActiveSessionsCard({
                   </div>
                 </div>
 
-                {!isCurrent && (
-                  <Button
-                    variant="danger-outline"
-                    size="sm"
-                    isLoading={revokingToken === sess.token}
-                    onClick={() => handleRevoke(sess.token)}
-                  >
-                    Revogar
-                  </Button>
-                )}
+                <Button
+                  variant={isCurrent ? "danger-outline" : "danger-outline"}
+                  size="sm"
+                  isLoading={revokingToken === sess.token}
+                  onClick={() => handleRevoke(sess.token)}
+                >
+                  {isCurrent ? "Sair desta sessão" : "Revogar"}
+                </Button>
               </div>
             );
           })}

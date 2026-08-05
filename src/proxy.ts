@@ -1,42 +1,65 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+const AUTH_PATHS = ["/login", "/login/2fa", "/register"];
+const SESSION_COOKIE_NAMES = [
+  "meu-app.session_token",
+  "meu-app.session_data",
+  "meu-app_two_factor",
+  "meu-app.two_factor",
+  "session_token",
+  "two_factor",
+];
 
+/**
+ * Remove cookies de sessão da resposta HTTP para que o browser os apague.
+ */
+function clearSessionCookiesInResponse(res: NextResponse): void {
+  SESSION_COOKIE_NAMES.forEach((name) => {
+    res.cookies.delete(name);
+  });
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname, searchParams } = request.nextUrl;
+
+  const isSessionExpired = searchParams.get("error") === "session_expired";
   const sessionCookie =
     getSessionCookie(request, { cookiePrefix: "meu-app" }) ||
     request.cookies.get("meu-app.session_token")?.value;
 
-  // 1. Se o usuário já está autenticado e tenta acessar /login, /login/2fa ou /register, envia pro dashboard
-  if (
-    sessionCookie &&
-    (pathname === "/login" || pathname === "/login/2fa" || pathname === "/register")
-  ) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  const isAuthPath = AUTH_PATHS.includes(pathname);
+
+  // 1. Tratamento especial quando o backend sinaliza que o cookie no browser caducou (sessão expirada/revogada em DB)
+  if (isSessionExpired && isAuthPath) {
+    const response = NextResponse.next();
+    clearSessionCookiesInResponse(response);
+    return response;
   }
 
   // 2. Proteção da rota de desafio 2FA (/login/2fa)
   if (pathname === "/login/2fa") {
-    // Verifica se existe o cookie de 2FA pendente emitido pelo Better Auth durante a etapa 1 do login
     const hasTwoFactorCookie =
       request.cookies.get("meu-app.two_factor")?.value ||
       request.cookies.get("two_factor")?.value ||
       request.cookies.get("meu-app_two_factor")?.value;
 
     if (!hasTwoFactorCookie) {
-      // Sem o cookie temporário do 2FA, o acesso direto é proibido -> redireciona para o login
       return NextResponse.redirect(new URL("/login", request.url));
     }
+    if (sessionCookie && !isSessionExpired) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    return NextResponse.next();
   }
 
-  // 3. Proteção genérica de rotas privadas se não houver sessão ativa
-  if (
-    !sessionCookie &&
-    pathname !== "/login" &&
-    pathname !== "/login/2fa" &&
-    pathname !== "/register"
-  ) {
+  // 3. Usuário com cookie navegando em rotas públicas de autenticação -> redireciona pro dashboard
+  if (sessionCookie && !isSessionExpired && isAuthPath) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // 4. Rotas protegidas sem cookie de sessão -> redireciona pro /login preservando redirectTo
+  if (!sessionCookie && !isAuthPath) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(loginUrl);
@@ -56,3 +79,4 @@ export const config = {
     "/register",
   ],
 };
+

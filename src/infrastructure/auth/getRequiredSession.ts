@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { createServerAuthGateway } from "./ServerAuthGatewayFactory";
-
 import { Session } from "@/src/domain/entities/Session";
 import { GetSessionUseCase } from "@/src/application/use-cases/GetSessionUseCase";
 
@@ -16,8 +15,13 @@ export const getRequiredSession = cache(async (): Promise<Session> => {
   const session = await getSessionUseCase.execute();
 
   if (!session) {
-    redirect("/login");
+    // Cookie existe no browser mas a sessão é inválida/revogada no backend.
+    // Em Server Components (RSC) do Next.js 16+, cookies().delete() lança erro.
+    // Passamos o parâmetro ?error=session_expired para que o proxy (Middleware)
+    // interceptes a requisição de /login e apague os cookies via resposta HTTP.
+    redirect("/login?error=session_expired");
   }
 
   return session;
 });
+
