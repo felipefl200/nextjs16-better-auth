@@ -1,4 +1,5 @@
 import { createServerAdminGateway } from '@/src/infrastructure/admin/ServerAdminGatewayFactory';
+import { getRequiredAdminSession } from '@/src/infrastructure/auth/getRequiredAdminSession';
 import { GetUserUseCase } from '@/src/application/use-cases/admin/GetUserUseCase';
 import UserManagementActions from './UserManagementActions';
 import Link from 'next/link';
@@ -11,12 +12,14 @@ interface PageProps {
 
 export default async function UserDetailPage({ params }: PageProps) {
   const { id } = await params;
+
+  // Já memoizado pelo cache() executado no layout — sem chamada extra.
+  const adminSession = await getRequiredAdminSession();
+
   const gateway = await createServerAdminGateway();
   const getUserUseCase = new GetUserUseCase(gateway);
-
   let targetUser = null;
   let error = '';
-
   try {
     targetUser = await getUserUseCase.execute(id);
   } catch (err: unknown) {
@@ -83,7 +86,10 @@ export default async function UserDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        <UserManagementActions targetUser={targetUser.toDTO()} />
+        <UserManagementActions
+          targetUser={targetUser.toDTO()}
+          currentUserId={adminSession.user.id}
+        />
       </div>
     </div>
   );

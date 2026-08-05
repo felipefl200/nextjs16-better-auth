@@ -8,8 +8,11 @@ export async function proxy(request: NextRequest) {
     getSessionCookie(request, { cookiePrefix: "meu-app" }) ||
     request.cookies.get("meu-app.session_token")?.value;
 
-  // 1. Se o usuário já está autenticado e tenta acessar /login ou /login/2fa, envia pro dashboard
-  if (sessionCookie && (pathname === "/login" || pathname === "/login/2fa")) {
+  // 1. Se o usuário já está autenticado e tenta acessar /login, /login/2fa ou /register, envia pro dashboard
+  if (
+    sessionCookie &&
+    (pathname === "/login" || pathname === "/login/2fa" || pathname === "/register")
+  ) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
@@ -28,7 +31,12 @@ export async function proxy(request: NextRequest) {
   }
 
   // 3. Proteção genérica de rotas privadas se não houver sessão ativa
-  if (!sessionCookie && pathname !== "/login" && pathname !== "/login/2fa") {
+  if (
+    !sessionCookie &&
+    pathname !== "/login" &&
+    pathname !== "/login/2fa" &&
+    pathname !== "/register"
+  ) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(loginUrl);
@@ -45,5 +53,6 @@ export const config = {
     "/admin/:path*",
     "/login",
     "/login/2fa",
+    "/register",
   ],
 };

@@ -18,11 +18,8 @@ export class UploadAvatarUseCase {
       throw new Error("Formato inválido. Use JPEG, PNG ou WebP.");
     }
 
-    // 1. Upload do arquivo para a infraestrutura (retorna apenas o nome do arquivo)
+    // 1. Upload do arquivo para a infraestrutura (o backend já vincula e persiste a imagem no perfil do usuário)
     const { filename } = await this.authGateway.uploadAvatar(file);
-
-    // 2. Atualizar perfil do usuário salvando apenas o NOME DO ARQUIVO no banco
-    await this.authGateway.updateProfile({ image: filename });
 
     const avatarUrl = `/uploads/avatars/${filename}`;
     return { filename, avatarUrl };

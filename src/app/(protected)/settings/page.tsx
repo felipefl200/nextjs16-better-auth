@@ -1,9 +1,31 @@
 import { getRequiredSession } from "@/src/infrastructure/auth/getRequiredSession";
+import { createServerAuthGateway } from "@/src/infrastructure/auth/ServerAuthGatewayFactory";
+import { ListSessionsUseCase } from "@/src/application/use-cases/ListSessionsUseCase";
 import TwoFactorSettingsCard from "./TwoFactorSettingsCard";
-import ActiveSessionsCard from "./ActiveSessionsCard";
+import ActiveSessionsCard, { ActiveSessionDTO } from "./ActiveSessionsCard";
 
 export default async function SettingsPage() {
   const session = await getRequiredSession();
+
+  let initialSessions: ActiveSessionDTO[] = [];
+  try {
+    const gateway = await createServerAuthGateway();
+    const useCase = new ListSessionsUseCase(gateway);
+    const sessions = await useCase.execute();
+    initialSessions = sessions.map((s) => ({
+      ...s,
+      createdAt:
+        s.createdAt instanceof Date
+          ? s.createdAt.toISOString()
+          : String(s.createdAt),
+      expiresAt:
+        s.expiresAt instanceof Date
+          ? s.expiresAt.toISOString()
+          : String(s.expiresAt),
+    }));
+  } catch (err) {
+    console.error("Falha ao carregar sessões ativas no servidor:", err);
+  }
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -25,6 +47,7 @@ export default async function SettingsPage() {
             <ActiveSessionsCard
               userId={session.user.id}
               currentSessionToken={session.token}
+              initialSessions={initialSessions}
             />
           </div>
         </div>

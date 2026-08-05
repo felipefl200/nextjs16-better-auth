@@ -22,7 +22,7 @@ export default function SessionRefresher() {
         cache: 'no-store',
       });
 
-      if (!res.ok) {
+      if (res.status === 401) {
         // Sessão expirou de fato ou é inválida — redireciona
         router.push('/login');
       }

@@ -9,7 +9,11 @@ import { Card, Input, Button, Alert } from "@/src/components/ui";
 
 function getSafeRedirectUrl(urlParam: string | null): string {
   if (!urlParam) return "/dashboard";
-  if (urlParam.startsWith("/") && !urlParam.startsWith("//") && !urlParam.includes(":")) {
+  if (
+    urlParam.startsWith("/") &&
+    !urlParam.startsWith("//") &&
+    !urlParam.includes(":")
+  ) {
     return urlParam;
   }
   return "/dashboard";
@@ -93,12 +97,7 @@ function LoginForm() {
           required
         />
 
-        <Button
-          type="submit"
-          isLoading={isPending}
-          fullWidth
-          size="lg"
-        >
+        <Button type="submit" isLoading={isPending} fullWidth size="lg">
           {isPending ? "Entrando..." : "Entrar"}
         </Button>
       </form>
@@ -123,7 +122,9 @@ export default function LoginPage() {
       <div className="absolute top-[-20%] left-[-10%] w-96 h-96 bg-indigo-500/30 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-20%] right-[-10%] w-96 h-96 bg-fuchsia-500/20 rounded-full blur-[120px]" />
 
-      <Suspense fallback={<div className="text-white text-sm">Carregando...</div>}>
+      <Suspense
+        fallback={<div className="text-white text-sm">Carregando...</div>}
+      >
         <LoginForm />
       </Suspense>
     </div>

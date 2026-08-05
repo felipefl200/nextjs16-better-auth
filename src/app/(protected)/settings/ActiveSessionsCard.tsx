@@ -1,70 +1,44 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { FetchAuthGateway } from "@/src/infrastructure/auth/FetchAuthGateway";
-import { ListSessionsUseCase } from "@/src/application/use-cases/ListSessionsUseCase";
 import { RevokeSessionUseCase } from "@/src/application/use-cases/RevokeSessionUseCase";
-import { ActiveSession } from "@/src/application/ports/AuthGateway";
 import { Button, Alert } from "@/src/components/ui";
+
+export interface ActiveSessionDTO {
+  id: string;
+  token: string;
+  userId: string;
+  expiresAt: string;
+  createdAt: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
 
 interface ActiveSessionsCardProps {
   userId?: string;
   currentSessionToken: string;
+  initialSessions: ActiveSessionDTO[];
 }
 
 export default function ActiveSessionsCard({
   currentSessionToken,
+  initialSessions,
 }: ActiveSessionsCardProps) {
-  const [sessions, setSessions] = useState<ActiveSession[]>([]);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [revokingToken, setRevokingToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const fetchSessions = useCallback(async () => {
-    setLoading(true);
+  const handleRefresh = () => {
     setError(null);
-    try {
-      const gateway = new FetchAuthGateway();
-      const useCase = new ListSessionsUseCase(gateway);
-      const data = await useCase.execute();
-      setSessions(data);
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Falha ao carregar as sessões ativas.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-    const load = async () => {
-      const gateway = new FetchAuthGateway();
-      const useCase = new ListSessionsUseCase(gateway);
-      try {
-        const data = await useCase.execute();
-        if (isMounted) setSessions(data);
-      } catch (err: unknown) {
-        if (isMounted) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Falha ao carregar as sessões ativas.",
-          );
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    setSuccess(null);
+    startTransition(() => {
+      router.refresh();
+    });
+  };
 
   const handleRevoke = async (token: string) => {
     setRevokingToken(token);
@@ -75,7 +49,9 @@ export default function ActiveSessionsCard({
       const useCase = new RevokeSessionUseCase(gateway);
       await useCase.execute(token);
       setSuccess("Sessão revogada com sucesso.");
-      await fetchSessions();
+      startTransition(() => {
+        router.refresh();
+      });
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : "Falha ao revogar a sessão.",
@@ -97,8 +73,8 @@ export default function ActiveSessionsCard({
         <Button
           variant="secondary"
           size="sm"
-          onClick={fetchSessions}
-          isLoading={loading}
+          onClick={handleRefresh}
+          isLoading={isPending}
         >
           Atualizar
         </Button>
@@ -116,15 +92,13 @@ export default function ActiveSessionsCard({
         </Alert>
       )}
 
-      {loading ? (
-        <div className="text-xs text-gray-500 py-2">Carregando sessões...</div>
-      ) : sessions.length === 0 ? (
+      {initialSessions.length === 0 ? (
         <div className="text-xs text-gray-400 py-2">
           Nenhuma sessão ativa encontrada.
         </div>
       ) : (
         <div className="space-y-3 pt-2">
-          {sessions.map((sess) => {
+          {initialSessions.map((sess) => {
             const isCurrent = sess.token === currentSessionToken;
             return (
               <div

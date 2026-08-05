@@ -14,16 +14,21 @@ import { RemoveUserUseCase } from '@/src/application/use-cases/admin/RemoveUserU
 
 interface UserManagementActionsProps {
   targetUser: UserDTO;
+  currentUserId: string;
 }
 
-export default function UserManagementActions({ targetUser }: UserManagementActionsProps) {
+export default function UserManagementActions({
+  targetUser,
+  currentUserId,
+}: UserManagementActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  // States para formulários
   const [banReason, setBanReason] = useState('');
   const [newPassword, setNewPassword] = useState('');
+
+  // Guarda de UX complementar à guarda do use case
+  const isSelf = targetUser.id === currentUserId;
 
   const getGateway = () => new FetchAdminGateway();
 
@@ -47,7 +52,8 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
     setMessage(null);
     try {
       const useCase = new BanUserUseCase(getGateway());
-      await useCase.execute(targetUser.id, undefined, banReason.trim() || undefined);
+      // Agora com currentUserId: impede o admin de banir a si mesmo
+      await useCase.execute(targetUser.id, currentUserId, banReason.trim() || undefined);
       setMessage({ type: 'success', text: 'Usuário banido com sucesso!' });
       router.refresh();
     } catch (err: unknown) {
@@ -109,7 +115,8 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
     setMessage(null);
     try {
       const useCase = new RemoveUserUseCase(getGateway());
-      await useCase.execute(targetUser.id);
+      // Agora com currentUserId: impede o admin de excluir a si mesmo
+      await useCase.execute(targetUser.id, currentUserId);
       setMessage({ type: 'success', text: 'Usuário removido com sucesso!' });
       setTimeout(() => router.push('/admin/users'), 1000);
     } catch (err: unknown) {
@@ -127,6 +134,13 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
       {message && (
         <Alert variant={message.type === 'success' ? 'success' : 'danger'}>
           {message.text}
+        </Alert>
+      )}
+
+      {isSelf && (
+        <Alert variant="warning" className="text-xs">
+          Você está gerenciando a sua própria conta. Banimento e exclusão
+          estão desabilitados por segurança.
         </Alert>
       )}
 
@@ -177,6 +191,7 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
               placeholder="Motivo do banimento (opcional)"
               value={banReason}
               onChange={(e) => setBanReason(e.target.value)}
+              disabled={isSelf}
             />
             <Button
               onClick={handleBan}
@@ -184,6 +199,7 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
               variant="danger"
               fullWidth
               size="md"
+              disabled={isSelf}
             >
               Banir Usuário
             </Button>
@@ -226,6 +242,7 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
           variant="warning"
           fullWidth
           size="md"
+          disabled={isSelf}
         >
           Impersonar Usuário (Acessar como ele)
         </Button>
@@ -239,6 +256,7 @@ export default function UserManagementActions({ targetUser }: UserManagementActi
           variant="danger-outline"
           fullWidth
           size="md"
+          disabled={isSelf}
         >
           Remover Usuário Permanentemente
         </Button>
