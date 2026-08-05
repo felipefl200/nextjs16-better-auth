@@ -26,12 +26,13 @@ interface ActiveSessionsCardProps {
 export default function ActiveSessionsCard({
   currentSessionToken,
   initialSessions,
-  initialError,
+  initialError = null,
 }: ActiveSessionsCardProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [revokingToken, setRevokingToken] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(initialError || null);
+  const [revokedTokens, setRevokedTokens] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(initialError);
   const [success, setSuccess] = useState<string | null>(null);
 
   const handleRefresh = () => {
@@ -50,6 +51,10 @@ export default function ActiveSessionsCard({
       const gateway = new FetchAuthGateway();
       const useCase = new RevokeSessionUseCase(gateway);
       await useCase.execute(token);
+      // Otimista: remove da lista imediatamente
+      setRevokedTokens((prev) =>
+        prev.includes(token) ? prev : [...prev, token],
+      );
       setSuccess("Sessão revogada com sucesso.");
       startTransition(() => {
         router.refresh();
@@ -63,7 +68,9 @@ export default function ActiveSessionsCard({
     }
   };
 
-  const activeError = error || initialError;
+  const sessions = initialSessions.filter(
+    (s) => !revokedTokens.includes(s.token),
+  );
 
   return (
     <div className="flex flex-col space-y-4 p-4 bg-gray-950/50 rounded-xl border border-gray-800">
@@ -84,9 +91,9 @@ export default function ActiveSessionsCard({
         </Button>
       </div>
 
-      {activeError && (
+      {error && (
         <Alert variant="danger" className="text-xs py-2 px-3">
-          {activeError}
+          {error}
         </Alert>
       )}
 
@@ -96,13 +103,13 @@ export default function ActiveSessionsCard({
         </Alert>
       )}
 
-      {initialSessions.length === 0 && !activeError ? (
+      {sessions.length === 0 ? (
         <div className="text-xs text-gray-400 py-2">
           Nenhuma sessão ativa encontrada.
         </div>
       ) : (
         <div className="space-y-3 pt-2">
-          {initialSessions.map((sess) => {
+          {sessions.map((sess) => {
             const isCurrent = sess.token === currentSessionToken;
             return (
               <div
@@ -126,7 +133,8 @@ export default function ActiveSessionsCard({
                       Criada em: {new Date(sess.createdAt).toLocaleDateString()}
                     </span>
                     <span>
-                      Expira em: {new Date(sess.expiresAt).toLocaleDateString()}
+                      Expira em:{" "}
+                      {new Date(sess.expiresAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
