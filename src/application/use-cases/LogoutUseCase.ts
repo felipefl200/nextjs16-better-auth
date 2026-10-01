@@ -1,4 +1,4 @@
-import { AuthGateway } from '../ports/AuthGateway';
+import { AuthGateway } from "../ports/AuthGateway";
 
 export class LogoutUseCase {
   constructor(private authGateway: AuthGateway) {}

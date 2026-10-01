@@ -1,4 +1,4 @@
-import { Session } from '../../domain/entities/Session';
+import { Session } from "@/domain/entities/Session";
 
 export interface AuthGateway {
   login(email: string, password: string): Promise<void>;

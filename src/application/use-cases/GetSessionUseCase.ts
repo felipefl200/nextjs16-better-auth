@@ -1,5 +1,5 @@
-import { Session } from '../../domain/entities/Session';
-import { AuthGateway } from '../ports/AuthGateway';
+import { Session } from "@/domain/entities/Session";
+import { AuthGateway } from "../ports/AuthGateway";
 
 export class GetSessionUseCase {
   constructor(private authGateway: AuthGateway) {}

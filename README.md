@@ -20,40 +20,47 @@ Aplicação web desenvolvida em **Next.js 16** com **React 19** integrada ao **B
 
 ## 🏛️ Arquitetura do Projeto
 
-O projeto adota a **Clean Architecture** separando claramente as responsabilidades em camadas desacopladas:
+O projeto adota a **Clean Architecture** separando claramente as responsabilidades em camadas desacopladas (alias `@/*` → `src/*`):
 
 ```text
 src/
 ├── app/                      # App Router (Next.js 16)
+│   ├── (auth)/               # Route Group público: login e cadastro
+│   │   ├── login/            # page.tsx (server) + LoginForm.tsx (client)
+│   │   └── register/         # page.tsx (server) + RegisterForm.tsx (client)
 │   ├── (protected)/          # Route Group para rotas autenticadas
-│   │   ├── dashboard/        # Página de Dashboard
-│   │   ├── profile/          # Página de Perfil
-│   │   ├── settings/         # Página de Configurações
-│   │   ├── layout.tsx        # Layout centralizado de autenticação
-│   │   ├── error.tsx         # Boundary de erro universal
-│   │   ├── loading.tsx       # State de carregamento universal
-│   │   └── SessionRefresher.tsx # Sincronizador de sessão client-side
-│   ├── login/                # Tela de Login
-│   └── register/             # Tela de Cadastro
-├── application/              # Camada de Casos de Uso (Use Cases) & Ports
-│   ├── ports/                # Interfaces/Contratos (ex: AuthGateway)
-│   └── use-cases/            # Regras de Negócio de Aplicação (GetSession, Login, Logout, Register)
-├── domain/                   # Camada de Domínio (Entidades e Erros puros)
-│   ├── entities/             # User, Session
-│   └── errors/               # Exceções de Domínio (InvalidCredentialsError, etc)
-├── infrastructure/           # Adaptadores e Conexões Externas
-│   └── auth/                 # Implementação de Gateway (FetchAuthGateway, ServerAuthGatewayFactory, getRequiredSession)
-└── proxy.ts                  # Edge Middleware (Next.js 16) para validação otimista de sessão
+│   │   ├── dashboard/ profile/ settings/
+│   │   ├── layout.tsx        # Guarda do primeiro carregamento + Navbar + <main>
+│   │   ├── error.tsx         # Boundary de erro das páginas protegidas
+│   │   └── loading.tsx       # Estado de carregamento
+│   ├── error.tsx             # Boundary de erro de layouts (ex.: backend fora do ar)
+│   └── layout.tsx            # Layout raiz + metadata
+├── components/               # Navbar, LogoutButton, SessionRefresher, ErrorView, PageHeader
+│   └── auth/                 # AuthCard, FormField, FormError
+├── application/              # Casos de Uso & Ports (AuthGateway)
+├── domain/                   # Entidades (User, Session) e erros de domínio
+├── infrastructure/
+│   ├── auth/                 # FetchAuthGateway, ServerAuthGatewayFactory, getRequiredSession,
+│   │                         # clientAuth (fábricas de casos de uso), safeRedirect, constants
+│   └── config/env.ts         # Leitura e validação de API_URL
+└── proxy.ts                  # Proxy (middleware) com checagem otimista do cookie
 ```
 
 ---
 
-## 🌟 Destaques Arquiteturais
+## 🔐 Fluxo de Autenticação
 
-1. **Edge Middleware Proxy (`src/proxy.ts`)**: Validação otimista de cookies de sessão (`meu-app.session_token`) na borda da rede antes do render dos Server Components, sem chamadas I/O bloqueantes.
-2. **Route Group Autenticado (`(protected)`)**: Layout centralizado (`layout.tsx`) que executa a guarda de segurança para todas as rotas filhas (`/dashboard`, `/profile`, `/settings`), eliminando código repetido nas páginas.
-3. **Memoização de Requisições (`getRequiredSession`)**: Utilitário que integra a Clean Architecture ao Next.js Server Components. Reutiliza o cache automático do `fetch` do Next.js para garantir que o layout e as páginas façam no máximo uma única requisição HTTP real ao backend por *render pass*.
-4. **Renovação por Eventos (`SessionRefresher`)**: Sincronização de cookies client-side engatilhada sob demanda durante navegações de rotas (`usePathname`), sem a necessidade de *polling* por intervalo (`setInterval`).
+1. **Proxy (`src/proxy.ts`)**: todas as rotas são protegidas por padrão, exceto `/`, `/login`, `/register`, `/api` e assets. Sem o cookie `meu-app.session_token`, redireciona para `/login?callbackUrl=<rota original>`. É apenas uma checagem otimista (presença do cookie), sem I/O.
+2. **Validação no servidor (`getRequiredSession`)**: **toda página protegida deve chamá-la**. O layout de `(protected)` também chama, mas layouts **não re-renderizam em navegações client-side**, então ele só protege o primeiro carregamento. A busca é memoizada com `cache()` do React: layout e página fazem uma única requisição por request. Apenas os cookies do Better Auth são repassados ao backend.
+3. **`SessionRefresher`**: a cada navegação client-side valida a sessão (o Better Auth responde `200` com `null` quando não há sessão) e renova o cookie. Sessão inexistente → `/login?callbackUrl=...`; falhas de rede ou 5xx não deslogam o usuário.
+4. **Login/cadastro**: as páginas validam a sessão no servidor e redirecionam usuários já autenticados. O `callbackUrl` é sanitizado (`sanitizeCallbackUrl`) para aceitar apenas caminhos internos, evitando *open redirect*.
+5. **Erros**: o `FetchAuthGateway` lê o `code` retornado pelo Better Auth (`INVALID_EMAIL_OR_PASSWORD`, `USER_ALREADY_EXISTS*`, `PASSWORD_TOO_SHORT`, `INVALID_EMAIL`, ...) e o converte em erros de domínio. A UI só exibe mensagens de `AuthError`.
+
+## ♿ HTML Semântico e Acessibilidade
+
+- Landmarks: `<header>`, `<nav aria-label="Principal">` com lista, um único `<main>` por página e link "Pular para o conteúdo".
+- Formulários: todo `<input>` tem `<label htmlFor>`, `autoComplete` adequado, `<fieldset>`/`<legend>` e erros anunciados com `role="alert"`.
+- Conteúdo: seções com `aria-labelledby`, cards como `<article>`, pares rótulo/valor em `<dl>`, `aria-current="page"` no menu e ícones decorativos com `aria-hidden`.
 
 ---
 
@@ -85,7 +92,6 @@ Conteúdo do `.env`:
 
 ```env
 API_URL="http://localhost:3001"
-BASE_URL="http://localhost:3001"
 ```
 
 ### 3. Iniciar em Modo de Desenvolvimento
@@ -96,9 +102,15 @@ npm run dev
 
 Acesse a aplicação em `http://localhost:3000`.
 
-### 4. Build de Produção e Verificação
+### 4. Qualidade
 
-Para gerar e validar a compilação de produção:
+```bash
+npm run lint       # ESLint
+npm run typecheck  # TypeScript (tsc --noEmit)
+npm test           # Testes unitários (Vitest)
+```
+
+### 5. Build de Produção
 
 ```bash
 npm run build
